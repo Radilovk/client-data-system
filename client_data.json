@@ -1,3 +1,18 @@
 {
-    "clients": []
+  "clients": [
+    {
+      "id": "123",
+      "name": "John Doe",
+      "age": 35,
+      "preferences": "Lower level fitness",
+      "goals": "Lose weight with consistent exercise"
+    },
+    {
+      "id": "456",
+      "name": "Mary Smith",
+      "age": 40,
+      "preferences": "Strict diet",
+      "goals": "Increase muscle mass strength"
+    }
+  ]
 }
