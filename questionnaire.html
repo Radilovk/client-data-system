@@ -69,10 +69,10 @@
     <script>
         const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
 
-        // Replace with your GitHub username and API key
-        const username = "your-username";
-        const apiKey = "your-api-key";
-        const encodedAuth = btoa(`${username}:${apiKey}`); // Encode Basic Authorization header
+        // Вашите данни за Basic Authorization
+        const username = "Radilovk";
+        const apiKey = "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";
+        const encodedAuth = btoa(`${username}:${apiKey}`); // Кодиране за Basic Authorization
 
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -91,7 +91,7 @@
             };
 
             try {
-                // Step 1: Fetch the current data
+                // Стъпка 1: Изтегляне на текущите данни
                 const response = await fetch(apiUrl, {
                     method: "GET",
                     headers: {
@@ -106,16 +106,15 @@
                 const data = await response.json();
                 console.log("Fetched data:", data); // Debugging log
 
-                // Step 2: Add the new client to the list
+                // Стъпка 2: Добавяне на новия клиент
                 const existingClients = JSON.parse(atob(data.content));
                 existingClients.clients.push(newClient);
                 console.log("Updated clients:", existingClients); // Debugging log
 
-                // Step 3: Encode the updated content
+                // Стъпка 3: Актуализация на файла
                 const updatedContent = btoa(JSON.stringify(existingClients));
                 console.log("Encoded content:", updatedContent); // Debugging log
 
-                // Step 4: Update the file in GitHub
                 const updateResponse = await fetch(apiUrl, {
                     method: "PUT",
                     headers: {
@@ -125,7 +124,7 @@
                     body: JSON.stringify({
                         message: "Add new client",
                         content: updatedContent,
-                        sha: data.sha // Current SHA of the file
+                        sha: data.sha
                     })
                 });
 
@@ -136,7 +135,7 @@
 
                 alert("Client data saved successfully!");
                 document.getElementById("questionnaire").reset();
-                window.location.href = "profile.html"; // Redirect to the profile page
+                window.location.href = "profile.html";
             } catch (error) {
                 console.error("Error details:", error);
                 alert(`An error occurred: ${error.message}`);
