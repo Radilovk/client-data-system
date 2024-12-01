@@ -4,11 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Profile</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        .profile-info {
+            margin: 15px 0;
+        }
+        .profile-info p {
+            margin: 8px 0;
+            color: #555;
+        }
+        .update-section {
+            margin-top: 20px;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <a href="index.html" style="margin-bottom: 20px;">Начало</a>
         <h2>Client Profile</h2>
         <div id="profile" class="profile-info">
             <!-- Profile information will be loaded here -->
@@ -36,31 +80,31 @@
 
     <script>
         const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
-        const token = "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";
 
-        // Function to extract clientId from URL parameters
-        function getClientIdFromUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get("id") || "defaultId"; // Replace "defaultId" with a fallback ID if necessary
-        }
+        // Вашите данни за Basic Authorization
+        const username = "Radilovk";
+        const apiKey = "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";
+        const encodedAuth = btoa(`${username}:${apiKey}`); // Кодиране за Basic Authorization
 
-        // Function to load client profile
+        // Функция за зареждане на профила
         async function loadProfile() {
             try {
                 const response = await fetch(apiUrl, {
                     method: "GET",
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        Authorization: `Basic ${encodedAuth}`
+                    }
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch data.");
+                    throw new Error(`Failed to fetch file: ${response.status} - ${response.statusText}`);
                 }
 
                 const data = await response.json();
-                const clients = JSON.parse(atob(data.content)).clients;
+                const clients = JSON.parse(atob(data.content));
 
-                // Get the client ID from URL
-                const clientId = getClientIdFromUrl();
+                // Извличане на clientId от URL параметрите
+                const clientId = new URLSearchParams(window.location.search).get("id");
                 const profile = clients.find(client => client.id === clientId);
 
                 if (profile) {
@@ -71,7 +115,7 @@
                         <p><strong>Goals:</strong> ${profile.goals}</p>
                     `;
 
-                    // Pre-fill the form with current values
+                    // Попълване на формата с текущите данни
                     document.getElementById("name").value = profile.name || "";
                     document.getElementById("age").value = profile.age || "";
                     document.getElementById("preferences").value = profile.preferences || "";
@@ -81,78 +125,83 @@
                 }
             } catch (error) {
                 console.error("Error loading profile:", error);
-                alert("Failed to load profile.");
+                alert("An error occurred while loading the profile.");
             }
         }
 
-        // Function to update client profile
+        // Функция за актуализация на профила
         async function updateProfile(event) {
             event.preventDefault();
 
-            try {
-                const name = document.getElementById("name").value;
-                const age = document.getElementById("age").value;
-                const preferences = document.getElementById("preferences").value;
-                const goals = document.getElementById("goals").value;
+            const name = document.getElementById("name").value;
+            const age = document.getElementById("age").value;
+            const preferences = document.getElementById("preferences").value;
+            const goals = document.getElementById("goals").value;
 
+            try {
+                // Стъпка 1: Изтегляне на текущите данни
                 const response = await fetch(apiUrl, {
                     method: "GET",
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: {
+                        Authorization: `Basic ${encodedAuth}`
+                    }
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch data.");
+                    throw new Error(`Failed to fetch file: ${response.status} - ${response.statusText}`);
                 }
 
                 const data = await response.json();
-                const clients = JSON.parse(atob(data.content)).clients;
+                const clients = JSON.parse(atob(data.content));
 
-                // Get the client ID from URL
-                const clientId = getClientIdFromUrl();
+                // Извличане на clientId от URL параметрите
+                const clientId = new URLSearchParams(window.location.search).get("id");
                 const clientIndex = clients.findIndex(client => client.id === clientId);
 
                 if (clientIndex !== -1) {
                     clients[clientIndex] = {
                         ...clients[clientIndex],
-                        name: name,
-                        age: age,
-                        preferences: preferences,
-                        goals: goals
+                        name,
+                        age,
+                        preferences,
+                        goals
                     };
 
-                    // Update JSON data in GitHub
+                    // Стъпка 2: Актуализация на файла
+                    const updatedContent = btoa(JSON.stringify({ clients }));
                     const updateResponse = await fetch(apiUrl, {
                         method: "PUT",
                         headers: {
-                            Authorization: `Bearer ${token}`,
+                            Authorization: `Basic ${encodedAuth}`,
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
                             message: "Update client data",
-                            content: btoa(JSON.stringify({ clients })),
+                            content: updatedContent,
                             sha: data.sha
                         })
                     });
 
-                    if (updateResponse.ok) {
-                        alert("Profile updated successfully!");
-                        loadProfile(); // Reload the profile with updated data
-                    } else {
-                        throw new Error("Failed to update the data.");
+                    if (!updateResponse.ok) {
+                        const errorDetails = await updateResponse.text();
+                        throw new Error(`Failed to update file: ${errorDetails}`);
                     }
+
+                    alert("Profile updated successfully!");
+                    loadProfile(); // Презареждане на профила
                 } else {
                     alert("Client not found.");
                 }
             } catch (error) {
                 console.error("Error updating profile:", error);
-                alert("Failed to update profile.");
+                alert(`An error occurred: ${error.message}`);
             }
         }
 
-        // Attach event listeners
+        // Свързване на събитията
         document.getElementById("updateForm").addEventListener("submit", updateProfile);
 
-        // Load the profile on page load
+        // Зареждане на профила при стартиране
         loadProfile();
     </script>
 </body>
