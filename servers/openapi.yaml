@@ -1,0 +1,97 @@
+openapi: 3.1.0
+info:
+  title: Client Data Manager
+  description: Управление на клиентски данни чрез GitHub API, използвайки branch метод.
+  version: 1.6.1
+servers:
+  - url: https://api.github.com
+    description: GitHub API Server
+paths:
+  /repos/Radilovk/client-data-system/contents/client_data.json:
+    get:
+      summary: Извличане на съдържание на client_data.json
+      operationId: getClientData
+      description: Извлича съдържанието на client_data.json.
+      responses:
+        "200":
+          description: Успешно извличане на файла
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileContentResponse"
+        "404":
+          description: Файлът не е намерен
+    put:
+      summary: Актуализация на клиентски данни
+      operationId: updateClientData
+      description: Актуализира съдържанието на client_data.json, използвайки branch `main`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequest"
+      responses:
+        "200":
+          description: Успешна актуализация на файла
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResponse"
+components:
+  securitySchemes:
+    githubToken:
+      type: apiKey
+      in: header
+      name: Authorization
+  schemas:
+    FileContentResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Име на файла
+        path:
+          type: string
+          description: Път до файла
+        sha:
+          type: string
+          description: SHA на файла
+        content:
+          type: string
+          description: Base64-кодирано съдържание на файла
+      required:
+        - name
+        - path
+        - sha
+        - content
+    UpdateRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Съобщение за комита
+        content:
+          type: string
+          description: Новото съдържание на файла, кодирано в Base64
+        branch:
+          type: string
+          description: Branch, където ще се правят промените (по подразбиране `main`)
+          default: main
+      required:
+        - message
+        - content
+    UpdateResponse:
+      type: object
+      properties:
+        commit:
+          type: object
+          properties:
+            sha:
+              type: string
+              description: SHA на новия комит
+            message:
+              type: string
+              description: Съобщение за комита
+security:
+  - githubToken: []
