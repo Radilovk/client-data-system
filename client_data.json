@@ -1,3 +1,9 @@
 {
-  "clients": []
+  "clients": [{
+    "id": "1",
+    "name": "John Doe",
+    "age": 30,
+    "preferences": "Coffee, Reading",
+    "goals": "Lose weight, Stay fit"
+  }]
 }
