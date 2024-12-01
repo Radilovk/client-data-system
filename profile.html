@@ -4,55 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Profile</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        .profile-info {
-            margin: 15px 0;
-        }
-        .profile-info p {
-            margin: 8px 0;
-            color: #555;
-        }
-        .update-section {
-            margin-top: 20px;
-        }
-        input, textarea, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
+        <a href="index.html" style="margin-bottom: 20px;">Начало</a>
         <h2>Client Profile</h2>
         <div id="profile" class="profile-info">
             <!-- Profile information will be loaded here -->
@@ -79,37 +35,53 @@
     </div>
 
     <script>
-        const apiUrl = "https://api.github.com/repos/YOUR_USERNAME/client-data-system/contents/client_data.json";
-        const token = "YOUR_PERSONAL_ACCESS_TOKEN";
+        const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
+        const token = "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";
+
+        // Function to extract clientId from URL parameters
+        function getClientIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("id") || "defaultId"; // Replace "defaultId" with a fallback ID if necessary
+        }
 
         // Function to load client profile
         async function loadProfile() {
-            const response = await fetch(apiUrl, {
-                method: "GET",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await response.json();
-            const clients = JSON.parse(atob(data.content)).clients;
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
+                });
 
-            // Replace "CLIENT_ID" dynamically with a real client ID (e.g., from URL parameters)
-            const clientId = "CLIENT_ID"; // Replace this with dynamic logic
-            const profile = clients.find(client => client.id === clientId);
+                if (!response.ok) {
+                    throw new Error("Failed to fetch data.");
+                }
 
-            if (profile) {
-                document.getElementById("profile").innerHTML = `
-                    <p><strong>Name:</strong> ${profile.name}</p>
-                    <p><strong>Age:</strong> ${profile.age}</p>
-                    <p><strong>Diet Preferences:</strong> ${profile.preferences}</p>
-                    <p><strong>Goals:</strong> ${profile.goals}</p>
-                `;
+                const data = await response.json();
+                const clients = JSON.parse(atob(data.content)).clients;
 
-                // Pre-fill the form with current values
-                document.getElementById("name").value = profile.name || "";
-                document.getElementById("age").value = profile.age || "";
-                document.getElementById("preferences").value = profile.preferences || "";
-                document.getElementById("goals").value = profile.goals || "";
-            } else {
-                document.getElementById("profile").innerHTML = "<p>Client not found.</p>";
+                // Get the client ID from URL
+                const clientId = getClientIdFromUrl();
+                const profile = clients.find(client => client.id === clientId);
+
+                if (profile) {
+                    document.getElementById("profile").innerHTML = `
+                        <p><strong>Name:</strong> ${profile.name}</p>
+                        <p><strong>Age:</strong> ${profile.age}</p>
+                        <p><strong>Diet Preferences:</strong> ${profile.preferences}</p>
+                        <p><strong>Goals:</strong> ${profile.goals}</p>
+                    `;
+
+                    // Pre-fill the form with current values
+                    document.getElementById("name").value = profile.name || "";
+                    document.getElementById("age").value = profile.age || "";
+                    document.getElementById("preferences").value = profile.preferences || "";
+                    document.getElementById("goals").value = profile.goals || "";
+                } else {
+                    document.getElementById("profile").innerHTML = "<p>Client not found.</p>";
+                }
+            } catch (error) {
+                console.error("Error loading profile:", error);
+                alert("Failed to load profile.");
             }
         }
 
@@ -117,49 +89,63 @@
         async function updateProfile(event) {
             event.preventDefault();
 
-            const name = document.getElementById("name").value;
-            const age = document.getElementById("age").value;
-            const preferences = document.getElementById("preferences").value;
-            const goals = document.getElementById("goals").value;
+            try {
+                const name = document.getElementById("name").value;
+                const age = document.getElementById("age").value;
+                const preferences = document.getElementById("preferences").value;
+                const goals = document.getElementById("goals").value;
 
-            const response = await fetch(apiUrl, {
-                method: "GET",
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await response.json();
-            const clients = JSON.parse(atob(data.content)).clients;
-
-            // Replace "CLIENT_ID" dynamically with a real client ID
-            const clientId = "CLIENT_ID"; // Replace this with dynamic logic
-            const clientIndex = clients.findIndex(client => client.id === clientId);
-
-            if (clientIndex !== -1) {
-                clients[clientIndex] = {
-                    ...clients[clientIndex],
-                    name: name,
-                    age: age,
-                    preferences: preferences,
-                    goals: goals
-                };
-
-                // Update JSON data in GitHub
-                await fetch(apiUrl, {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        message: "Update client data",
-                        content: btoa(JSON.stringify({ clients })),
-                        sha: data.sha
-                    })
+                const response = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: { Authorization: `Bearer ${token}` }
                 });
 
-                alert("Profile updated successfully!");
-                loadProfile();
-            } else {
-                alert("Client not found.");
+                if (!response.ok) {
+                    throw new Error("Failed to fetch data.");
+                }
+
+                const data = await response.json();
+                const clients = JSON.parse(atob(data.content)).clients;
+
+                // Get the client ID from URL
+                const clientId = getClientIdFromUrl();
+                const clientIndex = clients.findIndex(client => client.id === clientId);
+
+                if (clientIndex !== -1) {
+                    clients[clientIndex] = {
+                        ...clients[clientIndex],
+                        name: name,
+                        age: age,
+                        preferences: preferences,
+                        goals: goals
+                    };
+
+                    // Update JSON data in GitHub
+                    const updateResponse = await fetch(apiUrl, {
+                        method: "PUT",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            message: "Update client data",
+                            content: btoa(JSON.stringify({ clients })),
+                            sha: data.sha
+                        })
+                    });
+
+                    if (updateResponse.ok) {
+                        alert("Profile updated successfully!");
+                        loadProfile(); // Reload the profile with updated data
+                    } else {
+                        throw new Error("Failed to update the data.");
+                    }
+                } else {
+                    alert("Client not found.");
+                }
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                alert("Failed to update profile.");
             }
         }
 
