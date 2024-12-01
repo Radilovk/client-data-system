@@ -13,6 +13,13 @@
       "age": 40,
       "preferences": "Strict diet",
       "goals": "Increase muscle mass strength"
+    },
+    {
+      "id": "789",
+      "name": "Ivan Ivanov",
+      "age": 30,
+      "preferences": "Healthy eating, High-intensity workouts",
+      "goals": "Build muscle and maintain a balanced diet"
     }
   ]
 }
