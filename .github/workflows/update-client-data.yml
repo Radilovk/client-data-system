@@ -1,0 +1,35 @@
+name: Update Client Data
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-client-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Fetch client_data.json SHA
+      id: fetch_sha
+      run: |
+        response=$(curl -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        sha=$(echo $response | jq -r '.sha')
+        echo "::set-output name=sha::$sha"
+
+    - name: Update client_data.json
+      run: |
+        updated_content=$(echo '{"clients":[]}' | base64) # Replace with your updated content
+        curl -X PUT -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+             -H "Content-Type: application/json" \
+             -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ steps.fetch_sha.outputs.sha }}", "branch": "main"}' \
+             https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json
