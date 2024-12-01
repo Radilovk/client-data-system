@@ -4,11 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Questionnaire</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        form label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <a href="index.html" style="margin-bottom: 20px;">Начало</a>
         <h2>Client Questionnaire</h2>
         <form id="questionnaire">
             <label for="name">Name:</label>
@@ -28,71 +67,79 @@
     </div>
 
     <script>
-        // API details
         const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
-        const token = "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";
+
+        // Replace with your GitHub username and API key
+        const username = "your-username";
+        const apiKey = "your-api-key";
+        const encodedAuth = btoa(`${username}:${apiKey}`); // Encode Basic Authorization header
 
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            // Get form values
             const name = document.getElementById("name").value;
             const age = document.getElementById("age").value;
             const preferences = document.getElementById("preferences").value;
             const goals = document.getElementById("goals").value;
 
-            // Create a new client object
             const newClient = {
-                id: Date.now().toString(), // Unique ID for the client
-                name: name,
-                age: age,
-                preferences: preferences,
-                goals: goals
+                id: Date.now().toString(),
+                name,
+                age,
+                preferences,
+                goals
             };
 
             try {
-                // Fetch the current JSON data from GitHub
+                // Step 1: Fetch the current data
                 const response = await fetch(apiUrl, {
                     method: "GET",
                     headers: {
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Basic ${encodedAuth}`
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch existing data.");
+                    throw new Error(`Failed to fetch file: ${response.status} - ${response.statusText}`);
                 }
 
                 const data = await response.json();
-                const existingClients = JSON.parse(atob(data.content)); // Decode the base64 content
+                console.log("Fetched data:", data); // Debugging log
 
-                // Add the new client to the list
+                // Step 2: Add the new client to the list
+                const existingClients = JSON.parse(atob(data.content));
                 existingClients.clients.push(newClient);
+                console.log("Updated clients:", existingClients); // Debugging log
 
-                // Update the JSON file in GitHub
+                // Step 3: Encode the updated content
+                const updatedContent = btoa(JSON.stringify(existingClients));
+                console.log("Encoded content:", updatedContent); // Debugging log
+
+                // Step 4: Update the file in GitHub
                 const updateResponse = await fetch(apiUrl, {
                     method: "PUT",
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Basic ${encodedAuth}`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
                         message: "Add new client",
-                        content: btoa(JSON.stringify(existingClients)), // Encode the JSON to base64
-                        sha: data.sha // File's current SHA hash
+                        content: updatedContent,
+                        sha: data.sha // Current SHA of the file
                     })
                 });
 
-                if (updateResponse.ok) {
-                    alert("Client data saved successfully! Пренасочваме ви към вашия профил.");
-                    document.getElementById("questionnaire").reset(); // Reset the form
-                    window.location.href = "profile.html"; // Redirect to profile
-                } else {
-                    throw new Error("Failed to update the data.");
+                if (!updateResponse.ok) {
+                    const errorDetails = await updateResponse.text();
+                    throw new Error(`Failed to update file: ${errorDetails}`);
                 }
+
+                alert("Client data saved successfully!");
+                document.getElementById("questionnaire").reset();
+                window.location.href = "profile.html"; // Redirect to the profile page
             } catch (error) {
-                console.error("Error:", error);
-                alert("An error occurred while saving the data.");
+                console.error("Error details:", error);
+                alert(`An error occurred: ${error.message}`);
             }
         });
     </script>
