@@ -1,0 +1,31 @@
+name: Update Proxy File
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-proxy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Fetch client_data.json SHA
+      id: fetch_sha
+      run: |
+        response=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        sha=$(echo $response | jq -r '.sha')
+        echo "::set-output name=sha::$sha"
+
+    - name: Update bot_proxy.json
+      run: |
+        echo '{"client_data_sha": "${{ steps.fetch_sha.outputs.sha }}", "last_updated": "$(date --iso-8601=seconds)"}' > bot_proxy.json
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add bot_proxy.json
+        git commit -m "Update bot_proxy.json with new SHA"
+        git push origin main
