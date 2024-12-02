@@ -1,1 +1,1 @@
-{"clients": [{"id": "test_client", "name": "Test User", "age": 25, "preferences": "Minimal test preferences.", "goals": "Minimal test goals."}]}
+{"clients": [{"id": "test_client", "name": "Test User", "age": 25, "preferences": "Minimal test preferences.", "goals": "Minimal test goals."}, {"id": "new_client_id", "name": "New Client", "age": 30, "preferences": "New client preferences.", "goals": "New client goals."}]}
