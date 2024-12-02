@@ -1,0 +1,11 @@
+{
+    "clients": [
+        {
+            "id": "client_003",
+            "name": "John Doe",
+            "age": 28,
+            "preferences": "Loves cycling and healthy food.",
+            "goals": "To participate in triathlons and learn Spanish."
+        }
+    ]
+}
