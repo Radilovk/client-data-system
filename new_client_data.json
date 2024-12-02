@@ -5,7 +5,16 @@
             "name": "John Doe",
             "age": 28,
             "preferences": "Loves cycling and healthy food.",
-            "goals": "To participate in triathlons and learn Spanish."
+            "goals": "To participate in triathlons and learn Spanish.",
+            "occupation": "Software Engineer",
+            "location": "San Francisco, USA",
+            "contact_info": {
+                "email": "john.doe@example.com",
+                "phone": "+1-555-1234"
+            },
+            "membership_status": "Active",
+            "last_active_date": "2024-12-01",
+            "additional_notes": "Recently completed a marathon. Interested in joining a local cycling club."
         }
     ]
 }
