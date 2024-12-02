@@ -4,32 +4,40 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 * * * *'  # Проверка всеки час
   workflow_dispatch:
 
 jobs:
-  update-client-data:
+  sync-files:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-
     - name: Fetch client_data.json SHA
       id: fetch_sha
       run: |
-        response=$(curl -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        response=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
         sha=$(echo $response | jq -r '.sha')
         echo "::set-output name=sha::$sha"
 
-    - name: Update client_data.json
+    - name: Compare and update file
       run: |
-        updated_content=$(echo '{"clients":[]}' | base64) # Replace with your updated content
-        curl -X PUT -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+        if [[ "$(cat bot_proxy.json | jq -r '.client_data_sha')" != "${{ steps.fetch_sha.outputs.sha }}" ]]; then
+          updated_content=$(echo '{}' | base64) # Задай реално съдържание тук
+          curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Content-Type: application/json" \
+               -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ steps.fetch_sha.outputs.sha }}", "branch": "main"}' \
+               https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json
+        fi
+
+    - name: Update proxy file
+      run: |
+        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = "${{ steps.fetch_sha.outputs.sha }}"')
+        encoded_proxy=$(echo "$new_proxy_content" | base64)
+        curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
              -H "Content-Type: application/json" \
-             -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ steps.fetch_sha.outputs.sha }}", "branch": "main"}' \
-             https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json
+             -d '{"message": "Sync bot proxy file", "content": "'$encoded_proxy'", "sha": "$(cat bot_proxy.json | jq -r '.sha')", "branch": "main"}' \
+             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
