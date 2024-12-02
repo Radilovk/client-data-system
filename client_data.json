@@ -1,1 +1,19 @@
-{"clients": [{"id": "client001", "name": "Камен Петров", "age": 35, "preferences": "Обича планински туризъм, чете 
+{
+    "clients": [
+        {
+            "id": "client001",
+            "name": "Кнерезнео Зиздито",
+            "age": 35,
+            "preferences": "Оаича планински туризъм
+,
+            "goals": "чете вебарниз знитрой"
+        },
+        {
+            "id": "client_002",
+            "name": "Jane Smith",
+            "age": 32,
+            "preferences": "Enjoys hiking, photography, and Italian cuisine.",
+            "goals": "To travel to 10 countries in the next year increasing her photography skills."
+        }
+    ]
+}
