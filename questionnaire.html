@@ -67,75 +67,58 @@
     </div>
 
     <script>
-        const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
+        // Define the GitHub API URL for the clients directory
+        const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/clients/";
 
-        // Вашите данни за Basic Authorization
-        const username = "Radilovk";
+        // GitHub Personal Access Token (Replace with secure handling for production)
         const apiKey = "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";
-        const encodedAuth = btoa(`${username}:${apiKey}`); // Кодиране за Basic Authorization
+        const encodedAuth = `Bearer ${apiKey}`;
 
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
 
+            // Gather form data
             const name = document.getElementById("name").value;
             const age = document.getElementById("age").value;
             const preferences = document.getElementById("preferences").value;
             const goals = document.getElementById("goals").value;
 
+            // Create a new client object
             const newClient = {
-                id: Date.now().toString(),
+                id: `client_${Date.now()}`, // Unique ID for the client
                 name,
                 age,
                 preferences,
-                goals
+                goals,
+                history: [] // Empty history for new clients
             };
 
             try {
-                // Стъпка 1: Изтегляне на текущите данни
-                const response = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Basic ${encodedAuth}`
-                    }
-                });
+                // Convert the client data to JSON and encode as Base64
+                const jsonContent = JSON.stringify(newClient, null, 2);
+                const base64Content = btoa(jsonContent);
 
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch file: ${response.status} - ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log("Fetched data:", data); // Debugging log
-
-                // Стъпка 2: Добавяне на новия клиент
-                const existingClients = JSON.parse(atob(data.content));
-                existingClients.clients.push(newClient);
-                console.log("Updated clients:", existingClients); // Debugging log
-
-                // Стъпка 3: Актуализация на файла
-                const updatedContent = btoa(JSON.stringify(existingClients));
-                console.log("Encoded content:", updatedContent); // Debugging log
-
-                const updateResponse = await fetch(apiUrl, {
+                // Send the request to create a new JSON file in the clients directory
+                const response = await fetch(`${apiUrl}${newClient.id}.json`, {
                     method: "PUT",
                     headers: {
-                        Authorization: `Basic ${encodedAuth}`,
+                        Authorization: encodedAuth,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        message: "Add new client",
-                        content: updatedContent,
-                        sha: data.sha
+                        message: `Create new client file for ${newClient.name}`,
+                        content: base64Content
                     })
                 });
 
-                if (!updateResponse.ok) {
-                    const errorDetails = await updateResponse.text();
-                    throw new Error(`Failed to update file: ${errorDetails}`);
+                if (response.ok) {
+                    alert("Client data saved successfully!");
+                    document.getElementById("questionnaire").reset();
+                    window.location.href = "profile.html"; // Redirect to profile page
+                } else {
+                    const errorDetails = await response.text();
+                    throw new Error(`Failed to save client data: ${errorDetails}`);
                 }
-
-                alert("Client data saved successfully!");
-                document.getElementById("questionnaire").reset();
-                window.location.href = "profile.html";
             } catch (error) {
                 console.error("Error details:", error);
                 alert(`An error occurred: ${error.message}`);
