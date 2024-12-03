@@ -74,6 +74,11 @@
         const apiKey = "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";
         const encodedAuth = `Bearer ${apiKey}`;
 
+        // Function for Base64 encoding with UTF-8 support
+        function utf8ToBase64(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
 
@@ -96,7 +101,7 @@
             try {
                 // Convert the client data to JSON and encode as Base64
                 const jsonContent = JSON.stringify(newClient, null, 2);
-                const base64Content = btoa(jsonContent);
+                const base64Content = utf8ToBase64(jsonContent);
 
                 // Send the request to create a new JSON file in the clients directory
                 const response = await fetch(`${apiUrl}${newClient.id}.json`, {
