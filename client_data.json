@@ -14,6 +14,13 @@
             "age": 32,
             "preferences": "Enjoys hiking, photography, and Italian cuisine.",
             "goals": "To travel to 10 countries in the next year increasing her photography skills."
+        },
+        {
+            "id": "client_003",
+            "name": "Alice Brown",
+            "age": 29,
+            "preferences": "Enjoys painting and yoga.",
+            "goals": "To open an art gallery and improve flexibility."
         }
     ]
 }
