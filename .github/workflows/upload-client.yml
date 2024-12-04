@@ -2,7 +2,37 @@ name: Upload Client Data
 
 on:
   workflow_dispatch:
+    inputs:name: Upload Client Data
+
+on:
+  workflow_dispatch:
     inputs:
+      client_id:
+        description: 'Client ID'
+        required: true
+      client_data:
+        description: 'Base64 encoded client data'
+        required: true
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Create client JSON file
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      run: |
+        echo "${{ github.event.inputs.client_data }}" | base64 --decode > clients/client_${{ github.event.inputs.client_id }}.json
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add clients/client_${{ github.event.inputs.client_id }}.json
+        git commit -m "Add client file for ${{ github.event.inputs.client_id }}"
+        git push
+
       client_id:
         description: 'Client ID'
         required: true
