@@ -3,34 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Questionnaire</title>
+    <title>Client Questionnaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        form label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
 </head>
 <body>
-    <h1>Client Questionnaire</h1>
-    <form id="questionnaire">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name" required><br><br>
+    <div class="container">
+        <h2>Client Questionnaire</h2>
+        <form id="questionnaire">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
 
-        <label for="age">Age:</label>
-        <input type="number" id="age" name="age" required><br><br>
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" placeholder="Enter your age" required>
 
-        <label for="preferences">Preferences:</label>
-        <textarea id="preferences" name="preferences" required></textarea><br><br>
+            <label for="preferences">Diet Preferences:</label>
+            <textarea id="preferences" name="preferences" rows="2" placeholder="Enter your dietary preferences"></textarea>
 
-        <label for="goals">Goals:</label>
-        <textarea id="goals" name="goals" required></textarea><br><br>
+            <label for="goals">Goals:</label>
+            <textarea id="goals" name="goals" rows="2" placeholder="Enter your goals"></textarea>
 
-        <button type="submit">Submit</button>
-    </form>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
 
     <script>
-        const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/clients/";
-        const apiKey = "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";
-
-        function utf8ToBase64(str) {
-            return btoa(unescape(encodeURIComponent(str)));
-        }
-
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
 
@@ -49,31 +85,30 @@
             };
 
             try {
-                const jsonContent = JSON.stringify(newClient, null, 2);
-                const base64Content = utf8ToBase64(jsonContent);
+                const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
 
-                const response = await fetch(`${apiUrl}${newClient.id}.json`, {
-                    method: "PUT",
+                const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
+                    method: "POST",
                     headers: {
-                        Authorization: `Bearer ${apiKey}`,
+                        Authorization: `Bearer YOUR_SHORT_TERM_TOKEN_HERE`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        message: `Create new client file for ${newClient.name}`,
-                        content: base64Content
+                        event_type: "create-client-file",
+                        client_id: newClient.id,
+                        client_data: base64Data
                     })
                 });
 
                 if (response.ok) {
-                    alert("Client data saved successfully!");
+                    alert("Client data submitted successfully!");
                     document.getElementById("questionnaire").reset();
-                    window.location.href = "profile.html";
                 } else {
-                    const errorDetails = await response.json();
-                    throw new Error(`Failed to save client data: ${errorDetails.message}`);
+                    const errorDetails = await response.text();
+                    throw new Error(`Failed to dispatch workflow: ${errorDetails}`);
                 }
             } catch (error) {
-                console.error("Error details:", error);
+                console.error("Error:", error);
                 alert(`An error occurred: ${error.message}`);
             }
         });
