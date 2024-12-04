@@ -1,3 +1,8 @@
 {
-  "settings": {"added": "new_value"}
+  "settings": {
+    "version": "1.0",
+    "environment": "production"
+  },
+  "client_data_sha": "e546d8ad5a4570b5a5b1813cf226780c240583ab",
+  "last_updated": "2024-12-03T12:00:00Z"
 }
