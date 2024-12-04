@@ -2,10 +2,6 @@ name: Upload Client Data
 
 on:
   workflow_dispatch:
-    inputs:name: Upload Client Data
-
-on:
-  workflow_dispatch:
     inputs:
       client_id:
         description: 'Client ID'
@@ -24,35 +20,37 @@ jobs:
 
     - name: Create client JSON file
       env:
-        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        CLIENT_DATA: ${{ github.event.inputs.client_data }}
       run: |
-        echo "${{ github.event.inputs.client_data }}" | base64 --decode > clients/client_${{ github.event.inputs.client_id }}.json
+        # Decode the Base64 encoded client data and save to a new JSON file
+        echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
+
+        # Configure Git user for committing changes
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-        git add clients/client_${{ github.event.inputs.client_id }}.json
-        git commit -m "Add client file for ${{ github.event.inputs.client_id }}"
+
+        # Add the new client file to Git
+        git add clients/client_${CLIENT_ID}.json
+        git commit -m "Add client file for ${CLIENT_ID}"
         git push
 
-      client_id:
-        description: 'Client ID'
-        required: true
-      client_data:
-        description: 'Base64 encoded client data'
-        required: true
-
-jobs:
-  upload:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-
-    - name: Create client JSON file
+    - name: Update bot_proxy.json
+      env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        BOT_PROXY: bot_proxy.json
       run: |
-        echo "${{ github.event.inputs.client_data }}" | base64 --decode > clients/client_${{ github.event.inputs.client_id }}.json
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add clients/client_${{ github.event.inputs.client_id }}.json
-        git commit -m "Add client file for ${{ github.event.inputs.client_id }}"
+        # Generate a new SHA for the client file
+        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
+
+        # Update bot_proxy.json with the new SHA and timestamp
+        jq --arg sha "$NEW_SHA" \
+           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           --arg file "clients/client_${CLIENT_ID}.json" \
+           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": $file}]' \
+           $BOT_PROXY > bot_proxy_temp.json && mv bot_proxy_temp.json $BOT_PROXY
+
+        # Add and commit changes to bot_proxy.json
+        git add $BOT_PROXY
+        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
         git push
