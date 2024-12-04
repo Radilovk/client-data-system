@@ -89,6 +89,7 @@
                 const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
                     method: "POST",
                     headers: {
+                        "Authorization": `Bearer YOUR_GITHUB_TOKEN`, // Токенът ще бъде добавен автоматично от GitHub Actions.
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
