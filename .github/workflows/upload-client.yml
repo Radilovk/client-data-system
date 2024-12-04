@@ -1,0 +1,25 @@
+name: Upload Client Data
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [create-client-file]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Create client JSON file
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "${{ github.event.client_data }}" | base64 --decode > clients/client_${{ github.event.client_id }}.json
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add clients/client_${{ github.event.client_id }}.json
+        git commit -m "Add client file for ${{ github.event.client_id }}"
+        git push
