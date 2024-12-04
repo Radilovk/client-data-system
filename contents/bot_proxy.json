@@ -1,49 +1,21 @@
-<script>
-    document.getElementById("questionnaire").addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const name = document.getElementById("name").value;
-        const age = document.getElementById("age").value;
-        const preferences = document.getElementById("preferences").value;
-        const goals = document.getElementById("goals").value;
-
-        const newClient = {
-            id: `client_${Date.now()}`,
-            name,
-            age,
-            preferences,
-            goals,
-            history: []
-        };
-
-        try {
-            // Base64 encode the client data
-            const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
-
-            // Send data to GitHub API to trigger the workflow
-            const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${MY_GITHUB_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    event_type: "create-client-file",
-                    client_id: newClient.id,
-                    client_data: base64Data
-                })
-            });
-
-            if (response.ok) {
-                alert("Client data submitted successfully!");
-                document.getElementById("questionnaire").reset();
-            } else {
-                const errorDetails = await response.text();
-                throw new Error(`Failed to dispatch workflow: ${errorDetails}`);
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert(`An error occurred: ${error.message}`);
-        }
-    });
-</script>
+{
+  "settings": {
+    "version": "1.0",
+    "environment": "production",
+    "bot_name": "DietAssistantBot",
+    "language": "en"
+  },
+  "client_data_sha": "e546d8ad5a4570b5a5b1813cf226780c240583ab",
+  "last_updated": "2024-12-03T12:00:00Z",
+  "update_log": [
+    {
+      "date": "2024-12-02T14:30:00Z",
+      "action": "New client file added",
+      "file": "clients/client_123456.json"
+    },
+    {
+      "date": "2024-12-03T12:00:00Z",
+      "action": "Client data SHA updated"
+    }
+  ]
+}
