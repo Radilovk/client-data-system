@@ -86,11 +86,11 @@
 
             try {
                 const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
-
                 const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${MY_GITHUB_TOKEN}` // Configured in Secrets
                     },
                     body: JSON.stringify({
                         event_type: "create-client-file",
