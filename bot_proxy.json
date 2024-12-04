@@ -1,17 +1,1 @@
-{
-  "settings": {
-    "version": "1.0",
-    "environment": "production",
-    "bot_name": "DietAssistantBot",
-    "language": "en"
-  },
-  "client_data_sha": "current_sha",
-  "last_updated": "2024-12-03T12:00:00Z",
-  "update_log": [
-    {
-      "date": "2024-12-03T12:00:00Z",
-      "action": "Client data SHA updated",
-      "file": "clients/client_123456.json"
-    }
-  ]
-}
+{"client_data_sha": "0967ef424bce6791893e9a57bb952f80fd536e93", "last_updated": "$(date --iso-8601=seconds)"}
