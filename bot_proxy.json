@@ -5,17 +5,13 @@
     "bot_name": "DietAssistantBot",
     "language": "en"
   },
-  "client_data_sha": "e546d8ad5a4570b5a5b1813cf226780c240583ab",
+  "client_data_sha": "current_sha",
   "last_updated": "2024-12-03T12:00:00Z",
   "update_log": [
     {
-      "date": "2024-12-02T14:30:00Z",
-      "action": "New client file added",
-      "file": "clients/client_123456.json"
-    },
-    {
       "date": "2024-12-03T12:00:00Z",
-      "action": "Client data SHA updated"
+      "action": "Client data SHA updated",
+      "file": "clients/client_123456.json"
     }
   ]
 }
