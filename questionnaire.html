@@ -1,49 +1,117 @@
-<script>
-    document.getElementById("questionnaire").addEventListener("submit", async (event) => {
-        event.preventDefault();
-
-        const name = document.getElementById("name").value;
-        const age = document.getElementById("age").value;
-        const preferences = document.getElementById("preferences").value;
-        const goals = document.getElementById("goals").value;
-
-        const newClient = {
-            id: `client_${Date.now()}`,
-            name,
-            age,
-            preferences,
-            goals,
-            history: []
-        };
-
-        try {
-            // Base64 encode the client data
-            const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
-
-            // Send data to GitHub API to trigger the workflow
-            const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${MY_GITHUB_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    event_type: "create-client-file",
-                    client_id: newClient.id,
-                    client_data: base64Data
-                })
-            });
-
-            if (response.ok) {
-                alert("Client data submitted successfully!");
-                document.getElementById("questionnaire").reset();
-            } else {
-                const errorDetails = await response.text();
-                throw new Error(`Failed to dispatch workflow: ${errorDetails}`);
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert(`An error occurred: ${error.message}`);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Questionnaire</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
         }
-    });
-</script>
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        form label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Client Questionnaire</h2>
+        <form id="questionnaire">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+            <label for="age">Age:</label>
+            <input type="number" id="age" name="age" placeholder="Enter your age" required>
+
+            <label for="preferences">Diet Preferences:</label>
+            <textarea id="preferences" name="preferences" rows="2" placeholder="Enter your dietary preferences"></textarea>
+
+            <label for="goals">Goals:</label>
+            <textarea id="goals" name="goals" rows="2" placeholder="Enter your goals"></textarea>
+
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("questionnaire").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value;
+            const age = document.getElementById("age").value;
+            const preferences = document.getElementById("preferences").value;
+            const goals = document.getElementById("goals").value;
+
+            const newClient = {
+                id: `client_${Date.now()}`,
+                name,
+                age,
+                preferences,
+                goals,
+                history: []
+            };
+
+            try {
+                const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
+
+                const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer YOUR_GITHUB_TOKEN_HERE`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        event_type: "create-client-file",
+                        client_id: newClient.id,
+                        client_data: base64Data
+                    })
+                });
+
+                if (response.ok) {
+                    alert("Client data submitted successfully!");
+                    document.getElementById("questionnaire").reset();
+                } else {
+                    const errorDetails = await response.text();
+                    throw new Error(`Failed to dispatch workflow: ${errorDetails}`);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert(`An error occurred: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
