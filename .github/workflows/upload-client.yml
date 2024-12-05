@@ -1,116 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Questionnaire</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        h2 {
-            text-align: center;
-            color: #333;
-        }
-        form label {
-            font-weight: bold;
-            margin-top: 10px;
-            display: block;
-        }
-        input, textarea, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Client Questionnaire</h2>
-        <form id="questionnaire">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+name: Upload Client Data
 
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" placeholder="Enter your age" required>
+on:
+  workflow_dispatch:
+    inputs:
+      client_id:
+        description: 'Client ID'
+        required: true
+      client_data:
+        description: 'Base64 encoded client data'
+        required: true
 
-            <label for="preferences">Diet Preferences:</label>
-            <textarea id="preferences" name="preferences" rows="2" placeholder="Enter your dietary preferences"></textarea>
+jobs:
+  upload:
+    runs-on: ubuntu-22.04
 
-            <label for="goals">Goals:</label>
-            <textarea id="goals" name="goals" rows="2" placeholder="Enter your goals"></textarea>
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-            <button type="submit">Submit</button>
-        </form>
-    </div>
+      - name: Install jq
+        run: sudo apt-get install -y jq
 
-    <script>
-        document.getElementById("questionnaire").addEventListener("submit", async (event) => {
-            event.preventDefault();
+      - name: Create client JSON file
+        env:
+          CLIENT_ID: ${{ github.event.inputs.client_id }}
+          CLIENT_DATA: ${{ github.event.inputs.client_data }}
+        run: |
+          mkdir -p clients
+          echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add clients/client_${CLIENT_ID}.json
+          git commit -m "Add client file for ${CLIENT_ID}"
+          git push
 
-            const name = document.getElementById("name").value;
-            const age = document.getElementById("age").value;
-            const preferences = document.getElementById("preferences").value;
-            const goals = document.getElementById("goals").value;
-
-            const newClient = {
-                id: `client_${Date.now()}`,
-                name,
-                age,
-                preferences,
-                goals,
-                history: []
-            };
-
-            try {
-                const base64Data = btoa(unescape(encodeURIComponent(JSON.stringify(newClient, null, 2))));
-                const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/dispatches`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer YOUR_GITHUB_TOKEN`, // Токенът ще бъде добавен автоматично от GitHub Actions.
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        event_type: "create-client-file",
-                        client_id: newClient.id,
-                        client_data: base64Data
-                    })
-                });
-
-                if (response.ok) {
-                    alert("Client data submitted successfully!");
-                    document.getElementById("questionnaire").reset();
-                } else {
-                    const errorDetails = await response.text();
-                    throw new Error(`Failed to dispatch workflow: ${errorDetails}`);
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert(`An error occurred: ${error.message}`);
-            }
-        });
-    </script>
-</body>
-</html>
+      - name: Update bot_proxy.json
+        env:
+          CLIENT_ID: ${{ github.event.inputs.client_id }}
+        run: |
+          NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
+          jq --arg sha "$NEW_SHA" \
+             --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+             '.client_data_sha = $sha | .last_updated = $date' \
+             bot_proxy.json > bot_proxy_temp.json && mv bot_proxy_temp.json bot_proxy.json
+          git add bot_proxy.json
+          git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
+          git push
