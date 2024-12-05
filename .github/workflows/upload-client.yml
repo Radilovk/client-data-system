@@ -1,29 +1,26 @@
-name: Upload Client Data
+name: Update Client Data
 
 on:
   workflow_dispatch:
     inputs:
       client_id:
-        description: "Client ID"
+        description: 'Client ID'
         required: true
       client_data:
-        description: "Base64 encoded client data"
+        description: 'Base64 encoded client data'
         required: true
 
 jobs:
   upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-    # Checkout the repository
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # Install jq for JSON handling
     - name: Install jq
       run: sudo apt-get install -y jq
 
-    # Create client JSON file
     - name: Create client JSON file
       env:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
@@ -31,7 +28,7 @@ jobs:
       run: |
         mkdir -p clients
         echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
-        
+
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
@@ -39,23 +36,19 @@ jobs:
         git commit -m "Add client file for ${CLIENT_ID}"
         git push origin main
 
-    # Update bot_proxy.json file
-    - name: Update bot_proxy.json
+    - name: Update proxy file
       env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
-        BOT_PROXY: bot_proxy.json
+        CLIENT_SHA: ${{ github.event.inputs.client_data }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Generate SHA for the newly created client file
-        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
+        # Извличане на текущо съдържание на bot_proxy.json
+        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = env.CLIENT_SHA')
         
-        # Update bot_proxy.json with new SHA and timestamp
-        jq --arg sha "$NEW_SHA" \
-           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-           '.client_data_sha = $sha | .last_updated = $date' \
-           $BOT_PROXY > bot_proxy_updated.json
-        
-        mv bot_proxy_updated.json $BOT_PROXY
-        
-        git add $BOT_PROXY
-        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
-        git push origin main
+        # Конвертиране на JSON в base64 формат
+        encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
+
+        # Ъпдейт на bot_proxy.json чрез API
+        curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+             -H "Content-Type: application/json" \
+             -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$(jq -r .sha bot_proxy.json)\", \"branch\": \"main\"}" \
+             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
