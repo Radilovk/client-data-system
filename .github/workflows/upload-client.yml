@@ -15,38 +15,40 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      # Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      # Install jq (if required)
-      - name: Install jq
-        run: sudo apt-get install -y jq
+    - name: Install jq
+      run: sudo apt-get install -y jq
 
-      # Create client JSON file
-      - name: Create client JSON file
-        env:
-          CLIENT_ID: ${{ github.event.inputs.client_id }}
-          CLIENT_DATA: ${{ github.event.inputs.client_data }}
-        run: |
-          mkdir -p clients
-          echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add clients/client_${CLIENT_ID}.json
-          git commit -m "Add client file for ${CLIENT_ID}"
-          git push
+    - name: Create client JSON file
+      env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        CLIENT_DATA: ${{ github.event.inputs.client_data }}
+      run: |
+        mkdir -p clients
+        echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
 
-      # Update bot_proxy.json
-      - name: Update bot_proxy.json
-        env:
-          CLIENT_ID: ${{ github.event.inputs.client_id }}
-        run: |
-          NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-          jq --arg sha "$NEW_SHA" \
-             --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-             '.client_data_sha = $sha | .last_updated = $date' \
-             bot_proxy.json > bot_proxy_temp.json && mv bot_proxy_temp.json bot_proxy.json
-          git add bot_proxy.json
-          git commit -m "Update bot_proxy.json with new SHA and timestamp"
-          git push
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
+        git add clients/client_${CLIENT_ID}.json
+        git commit -m "Add client file for ${CLIENT_ID}"
+        git push origin main
+
+    - name: Update bot_proxy.json
+      env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        BOT_PROXY: bot_proxy.json
+      run: |
+        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
+        jq --arg sha "$NEW_SHA" \
+           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           '.client_data_sha = $sha | .last_updated = $date' \
+           $BOT_PROXY > bot_proxy_updated.json
+
+        mv bot_proxy_updated.json $BOT_PROXY
+
+        git add $BOT_PROXY
+        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
+        git push origin main
