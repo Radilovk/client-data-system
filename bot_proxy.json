@@ -1,1 +1,64 @@
-{"client_data_sha": "0967ef424bce6791893e9a57bb952f80fd536e93", "last_updated": "$(date --iso-8601=seconds)"}
+#!/bin/bash
+
+# Конфигурация
+CLIENT_ID="client_${RANDOM}" # Примерно генериран CLIENT_ID
+BOT_PROXY="bot_proxy.json"
+
+# Проверка дали bot_proxy.json съществува
+if [ ! -f "$BOT_PROXY" ]; then
+    echo "Creating bot_proxy.json as it does not exist."
+    echo '{
+        "client_data_sha": "",
+        "last_updated": "",
+        "update_log": []
+    }' > "$BOT_PROXY"
+fi
+
+# Генериране на нов SHA
+NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json 2>/dev/null || echo "placeholder_sha")
+
+# Проверка дали SHA е генерирано коректно
+if [ -z "$NEW_SHA" ] || [ "$NEW_SHA" == "placeholder_sha" ]; then
+    echo "Error: Unable to generate SHA for the client file."
+    exit 1
+fi
+
+# Обновяване на съдържанието на bot_proxy.json
+UPDATED_CONTENT=$(jq -c \
+    --arg sha "$NEW_SHA" \
+    --arg date "$(date --iso-8601=seconds)" \
+    '.client_data_sha = $sha | .last_updated = $date | .update_log += [$sha]' "$BOT_PROXY")
+
+# Проверка дали съдържанието е валидно
+if [ -z "$UPDATED_CONTENT" ]; then
+    echo "Error: Failed to update bot_proxy.json content."
+    exit 1
+fi
+
+# Кодиране на съдържанието
+ENCODED_CONTENT=$(echo "$UPDATED_CONTENT" | base64 --wrap=0)
+
+# SHA за текущия bot_proxy.json
+CURRENT_SHA=$(jq -r '.client_data_sha' "$BOT_PROXY")
+
+# PUT заявка към GitHub API
+RESPONSE=$(curl -s -o response.json -w "%{http_code}" \
+    -X PUT \
+    -H "Authorization: token ${{ secrets.T01 }}" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "message": "Update bot_proxy.json",
+        "content": "'"$ENCODED_CONTENT"'",
+        "sha": "'"$CURRENT_SHA"'",
+        "branch": "main"
+    }' \
+    https://api.github.com/repos/Radilovk/client-data-system/contents/$BOT_PROXY)
+
+# Проверка на отговора от API
+if [ "$RESPONSE" -ne 200 ]; then
+    echo "Error: Failed to update bot_proxy.json. Response:"
+    cat response.json
+    exit 1
+else
+    echo "bot_proxy.json updated successfully."
+fi
