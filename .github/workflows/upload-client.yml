@@ -42,8 +42,12 @@ jobs:
         BOT_PROXY: bot_proxy.json
       run: |
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        echo "client_data_sha=${NEW_SHA}" >> $GITHUB_ENV
-        echo '{"client_data_sha": "'${NEW_SHA}'", "last_updated": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}' > $BOT_PROXY
+        jq --arg sha "$NEW_SHA" \
+           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           '.client_data_sha = $sha | .last_updated = $date' \
+           $BOT_PROXY > bot_proxy_updated.json
+
+        mv bot_proxy_updated.json $BOT_PROXY
 
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
