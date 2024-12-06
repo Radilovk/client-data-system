@@ -1,4 +1,4 @@
-name: Update Client Data
+name: Upload Client Data
 
 on:
   workflow_dispatch:
@@ -38,24 +38,21 @@ jobs:
 
     - name: Update bot_proxy.json
       env:
-        CLIENT_SHA: ${{ github.event.inputs.client_data }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
-        # Генериране на ново съдържание за bot_proxy.json
-        new_proxy_content=$(jq -n \
-          --arg sha "$(git hash-object clients/client_${{ github.event.inputs.client_id }}.json)" \
-          --arg date "$(date --iso-8601=seconds)" \
+        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
+        NEW_PROXY_CONTENT=$(jq -n \
+          --arg sha "$NEW_SHA" \
+          --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
           '{"client_data_sha": $sha, "last_updated": $date}')
 
-        # Записване в bot_proxy.json
-        echo "$new_proxy_content" > bot_proxy.json
+        echo "$NEW_PROXY_CONTENT" > bot_proxy.json
 
-        # Конфигурация на Git
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
-        # Проверка за промени и commit
-        if [ "$(git status --porcelain)" ]; then
+        if [ "$(git status --porcelain bot_proxy.json)" ]; then
           git add bot_proxy.json
           git commit -m "Update bot_proxy.json with new SHA"
           git push origin main
