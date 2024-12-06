@@ -36,19 +36,23 @@ jobs:
         git commit -m "Add client file for ${CLIENT_ID}"
         git push origin main
 
-    - name: Update proxy file
+    - name: Update bot_proxy.json
       env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
         CLIENT_SHA: ${{ github.event.inputs.client_data }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Извличане на текущо съдържание на bot_proxy.json
-        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = env.CLIENT_SHA')
-        
-        # Конвертиране на JSON в base64 формат
-        encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
+        # Генериране на ново съдържание за bot_proxy.json
+        jq -n --arg sha "$CLIENT_SHA" --arg date "$(date --iso-8601=seconds)" \
+          '{"client_data_sha": $sha, "last_updated": $date}' > bot_proxy.json
 
-        # Ъпдейт на bot_proxy.json чрез API
-        curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$(jq -r .sha bot_proxy.json)\", \"branch\": \"main\"}" \
-             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
+        # Добавяне и commit на файла само ако има промени
+        if ! git diff --quiet bot_proxy.json; then
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add bot_proxy.json
+          git commit -m "Update bot_proxy.json with new SHA"
+          git push origin main
+        else
+          echo "No changes to commit in bot_proxy.json"
+        fi
