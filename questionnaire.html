@@ -89,7 +89,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer YOUR_GITHUB_TOKEN` // Replaced by GitHub Actions secrets
+                        "Authorization": `Bearer ${YOUR_SECRET_TOKEN_NAME}`
                     },
                     body: JSON.stringify({
                         event_type: "create-client-file",
