@@ -54,19 +54,19 @@ jobs:
         # Актуализиране на bot_proxy.json с jq
         jq --arg sha "$NEW_SHA" \
            --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": "clients/client_'${CLIENT_ID}'.json"}]' \
+           --arg file "clients/client_${CLIENT_ID}.json" \
+           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": $file}]' \
            $BOT_PROXY > bot_proxy_updated.json
+
+        # Проверка на валидността на JSON
+        if ! jq empty bot_proxy_updated.json; then
+          echo "Invalid JSON structure in bot_proxy_updated.json" >&2
+          exit 1
+        fi
 
         # Заместване на оригиналния файл
         mv bot_proxy_updated.json $BOT_PROXY
 
-        # Проверка дали JSON файлът е валиден
-        if ! jq empty $BOT_PROXY; then
-          echo "Invalid JSON in bot_proxy.json" >&2
-          exit 1
-        fi
-
-        # Конфигурация на Git
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
