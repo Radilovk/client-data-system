@@ -35,7 +35,7 @@ jobs:
         git add clients/client_${CLIENT_ID}.json
         git commit -m "Add client file for ${CLIENT_ID}"
 
-        # Изтегляне на последните промени преди push
+        # Ensure latest updates are pulled before pushing
         git pull origin main --rebase
 
         git push origin main
@@ -45,37 +45,35 @@ jobs:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
         BOT_PROXY: bot_proxy.json
       run: |
-        # Генериране на SHA за новия клиент
+        # Generate new SHA for the client file
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
 
-        # Изтегляне на последните промени
-        git pull origin main
+        # Pull the latest changes
+        git pull origin main --rebase
 
-        # Актуализиране на bot_proxy.json с jq
+        # Update bot_proxy.json with jq
         jq --arg sha "$NEW_SHA" \
            --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
            --arg file "clients/client_${CLIENT_ID}.json" \
            '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": $file}]' \
            $BOT_PROXY > bot_proxy_updated.json
 
-        # Проверка на валидността на JSON
+        # Validate JSON to prevent formatting errors
         if ! jq empty bot_proxy_updated.json; then
           echo "Invalid JSON structure in bot_proxy_updated.json" >&2
           exit 1
         fi
 
-        # Заместване на оригиналния файл
+        # Replace the original file with the updated version
         mv bot_proxy_updated.json $BOT_PROXY
 
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
-        # Добавяне и commit на промените
+        # Add and commit the changes
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
 
-        # Обединяване с отдалечените промени
+        # Push the changes safely
         git pull origin main --rebase
-
-        # Push на промените
         git push origin main
