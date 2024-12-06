@@ -38,21 +38,29 @@ jobs:
 
     - name: Update bot_proxy.json
       env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
         CLIENT_SHA: ${{ github.event.inputs.client_data }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         # Генериране на ново съдържание за bot_proxy.json
-        jq -n --arg sha "$CLIENT_SHA" --arg date "$(date --iso-8601=seconds)" \
-          '{"client_data_sha": $sha, "last_updated": $date}' > bot_proxy.json
+        new_proxy_content=$(jq -n \
+          --arg sha "$CLIENT_SHA" \
+          --arg date "$(date --iso-8601=seconds)" \
+          '{"client_data_sha": $sha, "last_updated": $date}')
 
-        # Добавяне и commit на файла само ако има промени
-        if ! git diff --quiet bot_proxy.json; then
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add bot_proxy.json
-          git commit -m "Update bot_proxy.json with new SHA"
-          git push origin main
-        else
-          echo "No changes to commit in bot_proxy.json"
-        fi
+        # Кодираме съдържанието в base64
+        encoded_proxy=$(echo "$new_proxy_content" | base64 --wrap=0)
+
+        # Взимаме текущото SHA на файла
+        current_sha=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json | jq -r '.sha')
+
+        # Изпращаме заявка за обновяване на файла
+        curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n \
+            --arg message "Sync bot proxy file" \
+            --arg content "$encoded_proxy" \
+            --arg sha "$current_sha" \
+            '{message: $message, content: $content, sha: $sha}')" \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
