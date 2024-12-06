@@ -28,13 +28,11 @@ jobs:
       run: |
         mkdir -p clients
         echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
+        echo "Client JSON file created successfully."
 
         # Configure Git for commit
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
-
-        # Sync with the remote repository to avoid conflicts
-        git pull origin main --rebase
 
         # Add the new client file
         git add clients/client_${CLIENT_ID}.json
@@ -56,9 +54,6 @@ jobs:
            $BOT_PROXY > bot_proxy_updated.json
         
         mv bot_proxy_updated.json $BOT_PROXY
-
-        # Sync with the remote repository to avoid conflicts
-        git pull origin main --rebase
 
         # Add and commit bot_proxy.json changes
         git add $BOT_PROXY
