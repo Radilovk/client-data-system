@@ -1,30 +1,21 @@
 name: Upload Client Data
 
 on:
-  workflow_dispatch:
-    inputs:
-      client_id:
-        description: 'Client ID'
-        required: true
-      client_data:
-        description: 'Base64 encoded client data'
-        required: true
+  repository_dispatch:
+    types: [create-client-file]
 
 jobs:
   upload:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Install jq
-      run: sudo apt-get install -y jq
-
-    - name: Create client JSON file
+    - name: Decode and create client JSON
       env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
-        CLIENT_DATA: ${{ github.event.inputs.client_data }}
+        CLIENT_ID: ${{ github.event.client_id }}
+        CLIENT_DATA: ${{ github.event.client_data }}
       run: |
         mkdir -p clients
         echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
@@ -38,20 +29,16 @@ jobs:
 
     - name: Update bot_proxy.json
       env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        CLIENT_ID: ${{ github.event.client_id }}
         BOT_PROXY: bot_proxy.json
       run: |
-        # Генериране на нов SHA и timestamp
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-        # Актуализация на bot_proxy.json със съответните стойности
         jq --arg sha "$NEW_SHA" \
-           --arg date "$TIMESTAMP" \
-           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": ("clients/client_" + env.CLIENT_ID + ".json")}]' \
-           $BOT_PROXY > bot_proxy_temp.json
+           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           '.client_data_sha = $sha | .last_updated = $date' \
+           $BOT_PROXY > bot_proxy_updated.json
 
-        mv bot_proxy_temp.json $BOT_PROXY
+        mv bot_proxy_updated.json $BOT_PROXY
 
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
