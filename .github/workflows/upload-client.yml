@@ -34,6 +34,10 @@ jobs:
 
         git add clients/client_${CLIENT_ID}.json
         git commit -m "Add client file for ${CLIENT_ID}"
+
+        # Изтегляне на последните промени преди push
+        git pull origin main --rebase
+
         git push origin main
 
     - name: Update bot_proxy.json
@@ -47,7 +51,7 @@ jobs:
         # Изтегляне на последните промени
         git pull origin main
 
-        # Актуализиране на bot_proxy.json
+        # Актуализиране на bot_proxy.json с jq
         jq --arg sha "$NEW_SHA" \
            --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
            '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": "clients/client_'${CLIENT_ID}'.json"}]' \
@@ -56,9 +60,17 @@ jobs:
         # Заместване на оригиналния файл
         mv bot_proxy_updated.json $BOT_PROXY
 
+        # Проверка дали JSON файлът е валиден
+        if ! jq empty $BOT_PROXY; then
+          echo "Invalid JSON in bot_proxy.json" >&2
+          exit 1
+        fi
+
+        # Конфигурация на Git
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
+        # Добавяне и commit на промените
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
 
