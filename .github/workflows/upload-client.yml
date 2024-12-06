@@ -1,4 +1,4 @@
-name: Upload Client Data
+name: Update Client Data
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repository
@@ -33,22 +33,22 @@ jobs:
         git config user.email "actions@github.com"
 
         git add clients/client_${CLIENT_ID}.json
-        git commit -m "Add client file for ${CLIENT_ID}" || echo "No changes to commit."
-        git push origin main || echo "Nothing to push."
+        git commit -m "Add client file for ${CLIENT_ID}"
+        git push origin main
 
     - name: Update bot_proxy.json
       env:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
-        BOT_PROXY: bot_proxy.json
+        TOKEN: ${{ secrets.T01 }}
       run: |
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
         jq --arg sha "$NEW_SHA" \
-           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           --arg date "$(date --iso-8601=seconds)" \
            '.client_data_sha = $sha | .last_updated = $date' \
-           $BOT_PROXY > bot_proxy_updated.json
+           bot_proxy.json > bot_proxy_updated.json
 
-        mv bot_proxy_updated.json $BOT_PROXY
+        mv bot_proxy_updated.json bot_proxy.json
 
-        git add $BOT_PROXY
-        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}" || echo "No changes to commit."
-        git push origin main || echo "Nothing to push."
+        git add bot_proxy.json
+        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
+        git push origin main
