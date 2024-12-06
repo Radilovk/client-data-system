@@ -89,7 +89,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${YOUR_SECRET_TOKEN_NAME}`
+                        "Authorization": `Bearer ${'T01'}` // Уверете се, че сте добавили токена T01 в GitHub Secrets
                     },
                     body: JSON.stringify({
                         event_type: "create-client-file",
