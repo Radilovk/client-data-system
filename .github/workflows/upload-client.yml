@@ -12,7 +12,7 @@ on:
 
 jobs:
   upload:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repository
@@ -28,13 +28,10 @@ jobs:
       run: |
         mkdir -p clients
         echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
-        echo "Client JSON file created successfully."
 
-        # Configure Git for commit
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
 
-        # Add the new client file
         git add clients/client_${CLIENT_ID}.json
         git commit -m "Add client file for ${CLIENT_ID}"
         git push origin main
@@ -44,18 +41,29 @@ jobs:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
         BOT_PROXY: bot_proxy.json
       run: |
-        # Generate a new SHA for the client file
+        # Генериране на SHA за новия клиент
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        
-        # Update bot_proxy.json with new SHA and timestamp
+
+        # Изтегляне на последните промени
+        git pull origin main
+
+        # Актуализиране на bot_proxy.json
         jq --arg sha "$NEW_SHA" \
            --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
            '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": "clients/client_'${CLIENT_ID}'.json"}]' \
            $BOT_PROXY > bot_proxy_updated.json
-        
+
+        # Заместване на оригиналния файл
         mv bot_proxy_updated.json $BOT_PROXY
 
-        # Add and commit bot_proxy.json changes
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
+
+        # Обединяване с отдалечените промени
+        git pull origin main --rebase
+
+        # Push на промените
         git push origin main
