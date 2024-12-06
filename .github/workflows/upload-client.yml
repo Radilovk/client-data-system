@@ -41,13 +41,17 @@ jobs:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
         BOT_PROXY: bot_proxy.json
       run: |
+        # Генериране на нов SHA и timestamp
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        jq --arg sha "$NEW_SHA" \
-           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-           '.client_data_sha = $sha | .last_updated = $date' \
-           $BOT_PROXY > bot_proxy_updated.json
+        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-        mv bot_proxy_updated.json $BOT_PROXY
+        # Актуализация на bot_proxy.json със съответните стойности
+        jq --arg sha "$NEW_SHA" \
+           --arg date "$TIMESTAMP" \
+           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": ("clients/client_" + env.CLIENT_ID + ".json")}]' \
+           $BOT_PROXY > bot_proxy_temp.json
+
+        mv bot_proxy_temp.json $BOT_PROXY
 
         git add $BOT_PROXY
         git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
