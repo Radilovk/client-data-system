@@ -12,7 +12,7 @@ on:
 
 jobs:
   upload:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -33,29 +33,22 @@ jobs:
         git config user.email "actions@github.com"
 
         git add clients/client_${CLIENT_ID}.json
-        git commit -m "Add client file for ${CLIENT_ID}"
-        git push origin main
+        git commit -m "Add client file for ${CLIENT_ID}" || echo "No changes to commit."
+        git push origin main || echo "Nothing to push."
 
     - name: Update bot_proxy.json
       env:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
-        GITHUB_TOKEN: ${{ secrets.T01 }}
+        BOT_PROXY: bot_proxy.json
       run: |
         NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        NEW_PROXY_CONTENT=$(jq -n \
-          --arg sha "$NEW_SHA" \
-          --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-          '{"client_data_sha": $sha, "last_updated": $date}')
+        jq --arg sha "$NEW_SHA" \
+           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+           '.client_data_sha = $sha | .last_updated = $date' \
+           $BOT_PROXY > bot_proxy_updated.json
 
-        echo "$NEW_PROXY_CONTENT" > bot_proxy.json
+        mv bot_proxy_updated.json $BOT_PROXY
 
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-
-        if [ "$(git status --porcelain bot_proxy.json)" ]; then
-          git add bot_proxy.json
-          git commit -m "Update bot_proxy.json with new SHA"
-          git push origin main
-        else
-          echo "No changes detected in bot_proxy.json, skipping commit."
-        fi
+        git add $BOT_PROXY
+        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}" || echo "No changes to commit."
+        git push origin main || echo "Nothing to push."
