@@ -1,75 +1,83 @@
-name: Upload and Update Proxy
+name: Upload Client Data
 
 on:
   workflow_dispatch:
     inputs:
       client_id:
-        description: "Client ID"
+        description: 'Client ID'
+        required: true
+      client_data:
+        description: 'Base64 encoded client data'
         required: true
 
 jobs:
-  update-proxy:
+  upload:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: sudo apt-get install -y jq
+    - name: Install jq
+      run: sudo apt-get install -y jq
 
-      - name: Update Proxy File
-        env:
-          CLIENT_ID: ${{ github.event.inputs.client_id }}
-          TOKEN: ${{ secrets.T01 }}
-        run: |
-          BOT_PROXY="bot_proxy.json"
+    - name: Create client JSON file
+      env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        CLIENT_DATA: ${{ github.event.inputs.client_data }}
+      run: |
+        mkdir -p clients
+        echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
 
-          # Ensure bot_proxy.json exists
-          if [ ! -f "$BOT_PROXY" ]; then
-            echo '{
-              "client_data_sha": "",
-              "last_updated": "",
-              "update_log": []
-            }' > "$BOT_PROXY"
-          fi
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
 
-          # Generate new SHA
-          NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json || echo "placeholder_sha")
+        git add clients/client_${CLIENT_ID}.json
+        git commit -m "Add client file for ${CLIENT_ID}"
+        git push origin main
 
-          # Validate SHA
-          if [ -z "$NEW_SHA" ] || [ "$NEW_SHA" == "placeholder_sha" ]; then
-            echo "Error: Failed to generate SHA."
-            exit 1
-          fi
+    - name: Update bot_proxy.json
+      env:
+        CLIENT_ID: ${{ github.event.inputs.client_id }}
+        BOT_PROXY="bot_proxy.json"
+        TOKEN=${{ secrets.T01 }}
+      run: |
+        if [ ! -f "$BOT_PROXY" ]; then
+          echo '{
+            "client_data_sha": "",
+            "last_updated": "",
+            "update_log": []
+          }' > "$BOT_PROXY"
+        fi
 
-          # Update bot_proxy.json
-          UPDATED_CONTENT=$(jq -c \
-            --arg sha "$NEW_SHA" \
-            --arg date "$(date --iso-8601=seconds)" \
-            '.client_data_sha = $sha | .last_updated = $date | .update_log += [$sha]' "$BOT_PROXY")
+        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json || echo "placeholder_sha")
 
-          # Encode content
-          ENCODED_CONTENT=$(echo "$UPDATED_CONTENT" | base64 --wrap=0)
-          CURRENT_SHA=$(jq -r '.client_data_sha' "$BOT_PROXY")
+        UPDATED_CONTENT=$(jq -c \
+          --arg sha "$NEW_SHA" \
+          --arg date "$(date --iso-8601=seconds)" \
+          --arg file "clients/client_${CLIENT_ID}.json" \
+          '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": $file}]' "$BOT_PROXY")
 
-          # Send API request
-          RESPONSE=$(curl -s -o response.json -w "%{http_code}" \
-            -X PUT \
-            -H "Authorization: token $TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "message": "Update bot_proxy.json",
-              "content": "'"$ENCODED_CONTENT"'",
-              "sha": "'"$CURRENT_SHA"'",
-              "branch": "main"
-            }' \
-            https://api.github.com/repos/Radilovk/client-data-system/contents/$BOT_PROXY)
+        ENCODED_CONTENT=$(echo "$UPDATED_CONTENT" | base64 --wrap=0)
 
-          if [ "$RESPONSE" -ne 200 ]; then
-            echo "Error: Failed to update bot_proxy.json."
-            cat response.json
-            exit 1
-          else
-            echo "bot_proxy.json updated successfully."
-          fi
+        CURRENT_SHA=$(jq -r '.client_data_sha' "$BOT_PROXY")
+
+        RESPONSE=$(curl -s -o response.json -w "%{http_code}" \
+          -X PUT \
+          -H "Authorization: token $TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "message": "Update bot_proxy.json with new SHA",
+            "content": "'"$ENCODED_CONTENT"'",
+            "sha": "'"$CURRENT_SHA"'",
+            "branch": "main"
+          }' \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/$BOT_PROXY)
+
+        if [ "$RESPONSE" -ne 200 ]; then
+          echo "Error: Failed to update bot_proxy.json. HTTP status $RESPONSE. Details:"
+          cat response.json
+          exit 1
+        else
+          echo "bot_proxy.json updated successfully."
+        fi
