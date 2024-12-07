@@ -25,7 +25,7 @@ jobs:
       env:
         CLIENT_ID: ${{ github.event.inputs.client_id }}
         CLIENT_DATA: ${{ github.event.inputs.client_data }}
-        API_KEY: ${{ secrets.T10 }}
+        API_KEY: ${{ secrets.T01 }}
       run: |
         mkdir -p clients
         echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
