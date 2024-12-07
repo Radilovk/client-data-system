@@ -89,7 +89,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer YOUR_PUBLIC_TOKEN` // Тук се поставя публичен токен, ако се използва бекенд
+                        "Authorization": `Bearer ${GITHUB_TOKEN}` // Тук се използва секрет
                     },
                     body: JSON.stringify({
                         event_type: "create-client-file",
