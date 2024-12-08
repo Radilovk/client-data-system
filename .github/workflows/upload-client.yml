@@ -29,18 +29,18 @@ jobs:
         # Извличане на текущия SHA от bot_proxy.json
         current_sha=$(cat bot_proxy.json | jq -r '.sha')
         echo "Current SHA: $current_sha"
-
+        
         # Проверка за промяна в SHA
         if [[ "$current_sha" != "${{ env.sha }}" ]]; then
           echo "Updating bot_proxy.json with new SHA: ${{ env.sha }}"
-
+          
           # Създаване на ново съдържание за bot_proxy.json
           new_proxy_content=$(cat bot_proxy.json | jq -c --arg sha "${{ env.sha }}" '.client_data_sha = $sha')
           echo "Updated JSON content: $new_proxy_content"
-
+          
           # Кодиране в Base64
           encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
-
+          
           # PUT заявка към GitHub API
           curl -X PUT \
                -H "Authorization: token ${{ secrets.T01 }}" \
