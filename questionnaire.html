@@ -67,6 +67,9 @@
     </div>
 
     <script>
+        const apiUrl = "https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json";
+        const encodedAuth = btoa("username:T01"); // Replace "username" with actual username
+
         async function fetchClients() {
             const response = await fetch(apiUrl, {
                 method: "GET",
@@ -83,7 +86,7 @@
             return JSON.parse(atob(data.content));
         }
 
-        async function updateClients(clients) {
+        async function updateClients(clients, sha) {
             const updatedContent = btoa(JSON.stringify({ clients }));
             const response = await fetch(apiUrl, {
                 method: "PUT",
@@ -94,7 +97,7 @@
                 body: JSON.stringify({
                     message: "Update client data",
                     content: updatedContent,
-                    sha: data.sha
+                    sha: sha
                 })
             });
 
@@ -107,8 +110,15 @@
         async function addClient(newClient) {
             try {
                 const clients = await fetchClients();
+                const sha = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Basic ${encodedAuth}`
+                    }
+                }).then(res => res.json()).then(data => data.sha);
+
                 clients.push(newClient);
-                await updateClients(clients);
+                await updateClients(clients, sha);
                 alert("Client data submitted successfully!");
                 document.getElementById("questionnaire").reset();
             } catch (error) {
