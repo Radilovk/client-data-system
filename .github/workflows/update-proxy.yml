@@ -19,22 +19,24 @@ jobs:
     - name: Fetch current SHA
       id: fetch_sha
       run: |
+        # Получаваме SHA на client_data.json
         response=$(curl -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
         sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
         echo "sha=$sha" >> $GITHUB_ENV
 
     - name: Update proxy file
       run: |
-        # Четем текущия SHA от bot_proxy.json
+        # Четем текущия bot_proxy.json
         current_sha=$(cat bot_proxy.json | grep '"sha"' | awk -F'"' '{print $4}')
+        client_data_sha="${{ env.sha }}"
         
-        # Актуализираме JSON съдържанието
-        new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"${{ env.sha }}\"/")
-
+        # Актуализираме JSON файла ръчно
+        new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"$client_data_sha\"/")
+        
         # Кодиране в Base64
         encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
 
-        # PUT заявка
+        # PUT заявка към GitHub API
         curl -X PUT \
              -H "Authorization: token ${{ secrets.T01 }}" \
              -H "Content-Type: application/json" \
