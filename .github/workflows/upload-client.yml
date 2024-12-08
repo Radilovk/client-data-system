@@ -16,31 +16,25 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Install jq
-      run: sudo apt-get install jq
-
     - name: Fetch client_data.json SHA
       id: fetch_sha
       run: |
         response=$(curl -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
-        sha=$(echo $response | jq -r '.sha')
+        sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
         echo "sha=$sha" >> $GITHUB_ENV
 
     - name: Compare and update file
       run: |
-        if [[ "$(cat bot_proxy.json | jq -r '.client_data_sha')" != "${{ env.sha }}" ]]; then
-          updated_content=$(echo '{}' | base64)
+        if [[ "$(cat bot_proxy.json | grep '"client_data_sha"' | awk -F'"' '{print $4}')" != "${{ env.sha }}" ]]; then
+          updated_content=$(echo '{}' | base64 -w 0)
           curl -X PUT -H "Authorization: token ${{ secrets.T01 }}" \
                -H "Content-Type: application/json" \
-               -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ env.sha }}", "branch": "main"}' \
-               https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json
+               -d @- <<EOF
+{
+  "message": "Update client data",
+  "content": "$updated_content",
+  "sha": "${{ env.sha }}",
+  "branch": "main"
+}
+EOF
         fi
-
-    - name: Update proxy file
-      run: |
-        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = "${{ env.sha }}"')
-        encoded_proxy=$(echo "$new_proxy_content" | base64)
-        curl -X PUT -H "Authorization: token ${{ secrets.T01 }}" \
-             -H "Content-Type: application/json" \
-             -d '{"message": "Sync bot proxy file", "content": "'$encoded_proxy'", "sha": "$(cat bot_proxy.json | jq -r '.sha')", "branch": "main"}' \
-             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
