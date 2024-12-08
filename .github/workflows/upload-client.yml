@@ -5,7 +5,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 * * * *'  # Проверката ще се извършва всеки час
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -15,6 +15,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+    - name: Install jq
+      run: sudo apt-get install jq
 
     - name: Fetch client_data.json SHA
       id: fetch_sha
@@ -26,7 +29,7 @@ jobs:
     - name: Compare and update file
       run: |
         if [[ "$(cat bot_proxy.json | jq -r '.client_data_sha')" != "${{ env.sha }}" ]]; then
-          updated_content=$(echo '{}' | base64) # Задайте реално съдържание тук
+          updated_content=$(echo '{}' | base64)
           curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                -H "Content-Type: application/json" \
                -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ env.sha }}", "branch": "main"}' \
