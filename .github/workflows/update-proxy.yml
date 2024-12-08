@@ -19,7 +19,7 @@ jobs:
     - name: Fetch current SHA
       id: fetch_sha
       run: |
-        response=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        response=$(curl -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
         sha=$(echo $response | jq -r '.sha')
         echo "sha=$sha" >> $GITHUB_ENV
 
@@ -27,7 +27,7 @@ jobs:
       run: |
         new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = "${{ env.sha }}"')
         encoded_proxy=$(echo "$new_proxy_content" | base64)
-        curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+        curl -X PUT -H "Authorization: token ${{ secrets.T01 }}" \
              -H "Content-Type: application/json" \
              -d '{"message": "Sync bot proxy file", "content": "'$encoded_proxy'", "sha": "$(cat bot_proxy.json | jq -r '.sha')", "branch": "main"}' \
              https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
