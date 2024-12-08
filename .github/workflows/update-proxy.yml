@@ -34,6 +34,7 @@ jobs:
         git add bot_proxy.json
         if ! git diff-index --quiet HEAD; then
           git commit -m "Update bot_proxy.json with new SHA"
+          git pull origin main --rebase
           git push origin main
         else
           echo "No changes to commit"
