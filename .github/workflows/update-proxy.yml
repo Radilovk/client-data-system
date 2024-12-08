@@ -17,13 +17,21 @@ jobs:
     - name: Fetch client_data.json SHA
       id: fetch_sha
       run: |
-        response=$(curl -H "Authorization: token ${{ secrets.T10 }}" \
+        echo "Fetching SHA for client_data.json..."
+        response=$(curl -s -H "Authorization: token ${{ secrets.T10 }}" \
           https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
-        sha=$(echo "$response" | jq -r '.sha')
-        echo "sha=$sha" >> $GITHUB_ENV
+        if echo "$response" | jq -e '.sha' > /dev/null; then
+          sha=$(echo "$response" | jq -r '.sha')
+          echo "Fetched SHA: $sha"
+          echo "sha=$sha" >> $GITHUB_ENV
+        else
+          echo "Failed to fetch SHA. Response: $response"
+          exit 1
+        fi
 
     - name: Update bot_proxy.json
       run: |
+        echo "Updating bot_proxy.json..."
         echo "{\"client_data_sha\": \"${{ env.sha }}\", \"last_updated\": \"$(date --iso-8601=seconds)\"}" > bot_proxy.json
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
@@ -35,14 +43,27 @@ jobs:
           echo "No changes to commit"
         fi
 
-    - name: Update proxy file
+    - name: Update proxy file in repository
       run: |
+        echo "Updating bot_proxy.json in repository..."
         new_proxy_content=$(cat bot_proxy.json | jq -c '.')
         encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
         sha=$(curl -s -H "Authorization: token ${{ secrets.T10 }}" \
           https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json | jq -r '.sha')
 
-        curl -X PUT -H "Authorization: token ${{ secrets.T10 }}" \
+        if [ -z "$sha" ]; then
+          echo "Failed to fetch SHA for bot_proxy.json. Exiting."
+          exit 1
+        fi
+
+        response=$(curl -s -X PUT -H "Authorization: token ${{ secrets.T10 }}" \
           -H "Content-Type: application/json" \
           -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$sha\", \"branch\": \"main\"}" \
-          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
+          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
+
+        if echo "$response" | jq -e '.commit.sha' > /dev/null; then
+          echo "Successfully updated bot_proxy.json. Response: $response"
+        else
+          echo "Failed to update bot_proxy.json. Response: $response"
+          exit 1
+        fi
