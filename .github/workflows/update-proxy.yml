@@ -23,7 +23,7 @@ jobs:
 
     - name: Update bot_proxy.json
       run: |
-        echo '{"client_data_sha": "${{ steps.fetch_sha.outputs.sha }}", "last_updated": "$(date --iso-8601=seconds)"}' > bot_proxy.json
+        echo '{"client_data_sha": "${{ env.sha }}", "last_updated": "$(date --iso-8601=seconds)"}' > bot_proxy.json
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add bot_proxy.json
