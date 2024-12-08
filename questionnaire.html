@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Questionnaire</title>
+    <title>Questionnaire</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,7 +89,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${GITHUB_TOKEN}` // Тук се използва секрет
+                        "Authorization": `Bearer ${GITHUB_TOKEN}`
                     },
                     body: JSON.stringify({
                         event_type: "create-client-file",
