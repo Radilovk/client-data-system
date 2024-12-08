@@ -25,9 +25,15 @@ jobs:
 
     - name: Compare and update file
       run: |
-        if [[ "$(cat bot_proxy.json | grep '"client_data_sha"' | awk -F'"' '{print $4}')" != "${{ env.sha }}" ]]; then
+        # Проверяваме дали SHA е различна
+        current_client_data_sha=$(cat bot_proxy.json | grep '"client_data_sha"' | awk -F'"' '{print $4}')
+        if [[ "$current_client_data_sha" != "${{ env.sha }}" ]]; then
+          # Подготвяме Base64 съдържание
           updated_content=$(echo '{}' | base64 -w 0)
-          curl -X PUT -H "Authorization: token ${{ secrets.T01 }}" \
+
+          # PUT заявка с правилно форматиран JSON
+          curl -X PUT \
+               -H "Authorization: token ${{ secrets.T01 }}" \
                -H "Content-Type: application/json" \
                -d @- <<EOF
 {
