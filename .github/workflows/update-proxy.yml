@@ -19,7 +19,7 @@ jobs:
       run: |
         response=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
         sha=$(echo $response | jq -r '.sha')
-        echo "::set-output name=sha::$sha"
+        echo "sha=$sha" >> $GITHUB_ENV
 
     - name: Update bot_proxy.json
       run: |
