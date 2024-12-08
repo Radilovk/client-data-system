@@ -27,5 +27,9 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add bot_proxy.json
-        git commit -m "Update bot_proxy.json with new SHA"
-        git push origin main
+        if ! git diff-index --quiet HEAD; then
+          git commit -m "Update bot_proxy.json with new SHA"
+          git push origin main
+        else
+          echo "No changes to commit"
+        fi
