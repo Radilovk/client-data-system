@@ -1,92 +1,43 @@
-name: Upload Client Data
+name: Update Client Data
 
 on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 * * * *'  # Проверката ще се извършва всеки час
   workflow_dispatch:
-    inputs:
-      client_id:
-        description: 'Client ID'
-        required: true
-      client_data:
-        description: 'Base64 encoded client data'
-        required: true
 
 jobs:
-  upload:
-    runs-on: ubuntu-22.04
+  sync-files:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
-    - name: Install jq
-      run: sudo apt-get install -y jq
-
-    - name: Create client JSON file
-      env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
-        CLIENT_DATA: ${{ github.event.inputs.client_data }}
-        API_KEY: ${{ secrets.T01 }}
+    - name: Fetch client_data.json SHA
+      id: fetch_sha
       run: |
-        mkdir -p clients
-        echo "$CLIENT_DATA" | base64 --decode > clients/client_${CLIENT_ID}.json
+        response=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        sha=$(echo $response | jq -r '.sha')
+        echo "sha=$sha" >> $GITHUB_ENV
 
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-
-        git add clients/client_${CLIENT_ID}.json
-        git commit -m "Add client file for ${CLIENT_ID}"
-
-        # Ensure latest updates are pulled before pushing
-        git pull origin main --rebase
-
-        git push origin main
-
-    - name: Update bot_proxy.json
-      env:
-        CLIENT_ID: ${{ github.event.inputs.client_id }}
-        BOT_PROXY: bot_proxy.json
+    - name: Compare and update file
       run: |
-        # Generate new SHA for the client file
-        NEW_SHA=$(git hash-object clients/client_${CLIENT_ID}.json)
-        echo "NEW_SHA=$NEW_SHA" >> $GITHUB_ENV
-
-        # Pull the latest changes
-        git pull origin main --rebase
-
-        # Update bot_proxy.json with jq
-        jq --arg sha "$NEW_SHA" \
-           --arg date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
-           --arg file "clients/client_${CLIENT_ID}.json" \
-           '.client_data_sha = $sha | .last_updated = $date | .update_log += [{"date": $date, "action": "New client file added", "file": $file}]' \
-           $BOT_PROXY > bot_proxy_updated.json
-
-        # Validate JSON to prevent formatting errors
-        if ! jq empty bot_proxy_updated.json; then
-          echo "Invalid JSON structure in bot_proxy_updated.json" >&2
-          exit 1
-        fi
-
-        # Replace the original file with the updated version
-        mv bot_proxy_updated.json $BOT_PROXY
-
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-
-        # Add and commit the changes
-        git add $BOT_PROXY
-        git commit -m "Update bot_proxy.json with new SHA for ${CLIENT_ID}"
-
-        # Push the changes safely
-        git pull origin main --rebase
-        git push origin main
-
-    - name: Update client data if SHA has changed
-      run: |
-        current_sha=$(cat bot_proxy.json | jq -r '.client_data_sha')
-        if [[ "$current_sha" != "$NEW_SHA" ]]; then
-          updated_content=$(echo '{}' | base64) # Задай реално съдържание тук
-          curl -X PUT -H "Authorization: token ${{ secrets.T01 }}" \
+        if [[ "$(cat bot_proxy.json | jq -r '.client_data_sha')" != "${{ env.sha }}" ]]; then
+          updated_content=$(echo '{}' | base64) # Задайте реално съдържание тук
+          curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
                -H "Content-Type: application/json" \
-               -d "{\"message\": \"Update client data\", \"content\": \"$updated_content\", \"sha\": \"$NEW_SHA\", \"branch\": \"main\"}" \
+               -d '{"message": "Update client data", "content": "'$updated_content'", "sha": "${{ env.sha }}", "branch": "main"}' \
                https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json
         fi
+
+    - name: Update proxy file
+      run: |
+        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = "${{ env.sha }}"')
+        encoded_proxy=$(echo "$new_proxy_content" | base64)
+        curl -X PUT -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+             -H "Content-Type: application/json" \
+             -d '{"message": "Sync bot proxy file", "content": "'$encoded_proxy'", "sha": "$(cat bot_proxy.json | jq -r '.sha')", "branch": "main"}' \
+             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
