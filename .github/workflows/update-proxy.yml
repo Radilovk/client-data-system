@@ -40,5 +40,5 @@ jobs:
         encoded_proxy=$(echo "$new_proxy_content" | base64)
         curl -X PUT -H "Authorization: token ${{ secrets.T10 }}" \
              -H "Content-Type: application/json" \
-             -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$(jq -r '.client_data_sha' bot_proxy.json)\", \"branch\": \"main\"}" \
+             -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$(cat bot_proxy.json | jq -r '.client_data_sha')\", \"branch\": \"main\"}" \
              https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
