@@ -19,28 +19,40 @@ jobs:
     - name: Fetch client_data.json SHA
       id: fetch_sha
       run: |
+        # Извличане на текущия SHA от client_data.json
         response=$(curl -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
         sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
         echo "sha=$sha" >> $GITHUB_ENV
 
     - name: Compare and update file
       run: |
-        # Проверяваме дали SHA е различна
-        current_client_data_sha=$(cat bot_proxy.json | grep '"client_data_sha"' | awk -F'"' '{print $4}')
-        if [[ "$current_client_data_sha" != "${{ env.sha }}" ]]; then
-          # Подготвяме Base64 съдържание
-          updated_content=$(echo '{}' | base64 -w 0)
+        # Извличане на текущия SHA от bot_proxy.json
+        current_sha=$(cat bot_proxy.json | jq -r '.sha')
+        echo "Current SHA: $current_sha"
 
-          # PUT заявка с правилно форматиран JSON
+        # Проверка за промяна в SHA
+        if [[ "$current_sha" != "${{ env.sha }}" ]]; then
+          echo "Updating bot_proxy.json with new SHA: ${{ env.sha }}"
+
+          # Създаване на ново съдържание за bot_proxy.json
+          new_proxy_content=$(cat bot_proxy.json | jq -c --arg sha "${{ env.sha }}" '.client_data_sha = $sha')
+          echo "Updated JSON content: $new_proxy_content"
+
+          # Кодиране в Base64
+          encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
+
+          # PUT заявка към GitHub API
           curl -X PUT \
                -H "Authorization: token ${{ secrets.T01 }}" \
                -H "Content-Type: application/json" \
                -d @- <<EOF
 {
-  "message": "Update client data",
-  "content": "$updated_content",
-  "sha": "${{ env.sha }}",
+  "message": "Sync bot proxy file",
+  "content": "$encoded_proxy",
+  "sha": "$current_sha",
   "branch": "main"
 }
 EOF
+        else
+          echo "No update needed. SHA is up to date."
         fi
