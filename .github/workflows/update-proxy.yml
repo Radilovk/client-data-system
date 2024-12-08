@@ -1,46 +1,23 @@
-name: Update Proxy File
+- name: Update proxy file
+  run: |
+    # Четене на текущия SHA от bot_proxy.json
+    current_sha=$(cat bot_proxy.json | grep '"sha"' | awk -F'"' '{print $4}')
+    echo "Current SHA: $current_sha"
 
-on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
+    # Четене на текущия client_data_sha
+    new_client_data_sha="0967ef424bce6791893e9a57bb952f80fd536e93"
 
-jobs:
-  update-proxy:
-    runs-on: ubuntu-latest
+    # Обновяване на JSON съдържание
+    new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"$new_client_data_sha\"/")
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    # Кодиране на новото съдържание в Base64
+    encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
 
-    - name: Fetch current SHA
-      id: fetch_sha
-      run: |
-        # Получаваме SHA на client_data.json
-        response=$(curl -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
-        sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
-        echo "sha=$sha" >> $GITHUB_ENV
-
-    - name: Update proxy file
-      run: |
-        # Четем текущия bot_proxy.json
-        current_sha=$(cat bot_proxy.json | grep '"sha"' | awk -F'"' '{print $4}')
-        client_data_sha="${{ env.sha }}"
-        
-        # Актуализираме JSON файла ръчно
-        new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"$client_data_sha\"/")
-        
-        # Кодиране в Base64
-        encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
-
-        # PUT заявка към GitHub API
-        curl -X PUT \
-             -H "Authorization: token ${{ secrets.T01 }}" \
-             -H "Content-Type: application/json" \
-             -d @- <<EOF
+    # PUT заявка за актуализиране на файла
+    curl -X PUT \
+         -H "Authorization: token ${{ secrets.T01 }}" \
+         -H "Content-Type: application/json" \
+         -d @- <<EOF
 {
   "message": "Sync bot proxy file",
   "content": "$encoded_proxy",
