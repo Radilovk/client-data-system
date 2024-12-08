@@ -17,13 +17,14 @@ jobs:
     - name: Fetch client_data.json SHA
       id: fetch_sha
       run: |
-        response=$(curl -H "Authorization: token ${{ secrets.T10 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
-        sha=$(echo $response | jq -r '.sha')
+        response=$(curl -H "Authorization: token ${{ secrets.T10 }}" \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        sha=$(echo "$response" | jq -r '.sha')
         echo "sha=$sha" >> $GITHUB_ENV
 
     - name: Update bot_proxy.json
       run: |
-        echo '{"client_data_sha": "${{ env.sha }}", "last_updated": "$(date --iso-8601=seconds)"}' > bot_proxy.json
+        echo "{\"client_data_sha\": \"${{ env.sha }}\", \"last_updated\": \"$(date --iso-8601=seconds)\"}" > bot_proxy.json
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add bot_proxy.json
@@ -36,9 +37,12 @@ jobs:
 
     - name: Update proxy file
       run: |
-        new_proxy_content=$(cat bot_proxy.json | jq -c '. | .client_data_sha = "${{ env.sha }}"')
-        encoded_proxy=$(echo "$new_proxy_content" | base64)
+        new_proxy_content=$(cat bot_proxy.json | jq -c '.')
+        encoded_proxy=$(echo "$new_proxy_content" | base64 -w 0)
+        sha=$(curl -s -H "Authorization: token ${{ secrets.T10 }}" \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json | jq -r '.sha')
+
         curl -X PUT -H "Authorization: token ${{ secrets.T10 }}" \
-             -H "Content-Type: application/json" \
-             -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$(cat bot_proxy.json | jq -r '.client_data_sha')\", \"branch\": \"main\"}" \
-             https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
+          -H "Content-Type: application/json" \
+          -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$sha\", \"branch\": \"main\"}" \
+          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
