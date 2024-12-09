@@ -110,7 +110,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer T01`, // Уверете се, че токенът е правилно настроен в GitHub Secrets
+                        Authorization: `Bearer T01`, // Уверете се, че имате правилен токен в GitHub Secrets
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
@@ -118,6 +118,8 @@
                         client_data: btoa(unescape(encodeURIComponent(JSON.stringify(data)))), // Encode data with Unicode support
                     }),
                 });
+
+                console.log("Response status:", response.status);
 
                 if (response.ok) {
                     statusDiv.textContent = "Response submitted successfully!";
