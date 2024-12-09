@@ -17,3 +17,13 @@ jobs:
 
     - name: Print client data
       run: cat client_data.json
+
+    - name: Send data to server
+      env:
+        GITHUB_TOKEN: ${{ secrets.T01 }}
+      run: |
+        curl -X POST \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d @client_data.json \
+        https://api.yourserver.com/submit-data
