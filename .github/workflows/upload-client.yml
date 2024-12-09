@@ -20,38 +20,38 @@ jobs:
       id: fetch_sha
       run: |
         # Извличане на SHA от client_data.json
-        response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
+        response=$(curl -H "Authorization: token ${{ secrets.T01 }}" \
                          https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
-        echo "$response" > client_data_response.json
-        sha=$(jq -r '.sha' client_data_response.json)
+        sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
         echo "sha=$sha" >> $GITHUB_ENV
 
-    - name: Fetch bot_proxy.json Content and SHA
+    - name: Fetch bot_proxy.json SHA and Content
       id: fetch_proxy
       run: |
-        # Изтегляне на bot_proxy.json
-        response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
+        # Изтегляне на съдържанието на bot_proxy.json
+        response=$(curl -H "Authorization: token ${{ secrets.T01 }}" \
                          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
-        echo "$response" > bot_proxy_response.json
-        proxy_sha=$(jq -r '.sha' bot_proxy_response.json)
-        content=$(jq -r '.content' bot_proxy_response.json | base64 -d)
-        echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
+        content=$(echo $response | grep -Po '"content":\s*"\K[^"]*' | base64 -d)
+        proxy_sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
+        # Запазване на резултатите
         echo "$content" > bot_proxy.json
+        echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
 
     - name: Compare and update file
       run: |
         # Проверка дали SHA е различен
-        current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
+        current_sha=$(cat bot_proxy.json | grep -Po '"client_data_sha":\s*"\K[^"]*')
         if [[ "$current_sha" != "${{ env.sha }}" ]]; then
           echo "Updating bot_proxy.json with new SHA: ${{ env.sha }}"
 
-          # Актуализиране на client_data_sha
-          updated_content=$(jq --arg new_sha "${{ env.sha }}" '.client_data_sha = $new_sha' bot_proxy.json)
+          # Подмяна на client_data_sha
+          updated_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"${{ env.sha }}\"/")
 
-          # Кодиране на съдържанието в Base64
-          encoded_content=$(echo "$updated_content" | base64 -w 0)
+          # Запазване на актуализираното съдържание
+          echo "$updated_content" > bot_proxy_updated.json
+          encoded_content=$(cat bot_proxy_updated.json | base64 -w 0)
 
-          # Генериране на JSON за PUT заявката
+          # Генериране на JSON файл за PUT заявката
           echo "{
             \"message\": \"Sync bot proxy file\",
             \"content\": \"$encoded_content\",
@@ -66,5 +66,5 @@ jobs:
                --data @payload.json \
                https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
         else
-          echo "No update needed. SHA is up to date."
+          echo "No update needed. client_data_sha is up to date."
         fi
