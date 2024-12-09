@@ -110,7 +110,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer T01`, // Уверете се, че имате правилен токен в GitHub Secrets
+                        Authorization: `Bearer ${T01}`, // Уверете се, че имате правилен токен в GitHub Secrets
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
