@@ -27,15 +27,15 @@ jobs:
 
     - name: Compare and update file
       run: |
-        # Извличане на текущия SHA от bot_proxy.json
-        current_sha=$(cat bot_proxy.json | grep '"sha"' | awk -F'"' '{print $4}')
-        echo "Current SHA: $current_sha"
+        # Извличане на текущия client_data_sha от bot_proxy.json
+        current_sha=$(cat bot_proxy.json | grep '"client_data_sha"' | awk -F'"' '{print $4}')
+        echo "Current client_data_sha: $current_sha"
 
         # Проверка за промяна в SHA
         if [[ "$current_sha" != "${{ env.sha }}" ]]; then
           echo "Updating bot_proxy.json with new SHA: ${{ env.sha }}"
 
-          # Актуализиране на client_data_sha в bot_proxy.json
+          # Създаване на ново съдържание за bot_proxy.json
           new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"${{ env.sha }}\"/")
           echo "$new_proxy_content" > updated_bot_proxy.json
 
@@ -50,10 +50,9 @@ jobs:
 {
   "message": "Sync bot proxy file",
   "content": "$encoded_proxy",
-  "sha": "$current_sha",
   "branch": "main"
 }
 EOF
         else
-          echo "No update needed. SHA is up to date."
+          echo "No update needed. client_data_sha is up to date."
         fi
