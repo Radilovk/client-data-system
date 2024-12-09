@@ -23,13 +23,14 @@ jobs:
                      https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
 
         # Извличане на съдържанието и SHA
-        content=$(echo "$response" | jq -r '.content // empty')
-        proxy_sha=$(echo "$response" | jq -r '.sha // empty')
+        content=$(echo "$response" | grep -Po '"content":\s*"\K[^"]*' | tr -d '\n')
+        proxy_sha=$(echo "$response" | grep -Po '"sha":\s*"\K[^"]*')
 
-        # Проверка за валидност на Base64 съдържанието
+        # Проверка дали съдържанието е валидно Base64
         if [[ -n "$content" ]]; then
-          decoded_content=$(echo "$content" | tr -d '\n' | base64 -d 2>/dev/null || echo "INVALID_BASE64")
-          if [[ "$decoded_content" == "INVALID_BASE64" ]]; then
+          if echo "$content" | base64 -d > /dev/null 2>&1; then
+            decoded_content=$(echo "$content" | base64 -d)
+          else
             echo "Warning: Content is not valid Base64. Skipping decoding." >&2
             decoded_content=""
           fi
@@ -39,7 +40,7 @@ jobs:
         fi
 
         # Запазване на съдържанието и SHA
-        echo "$decoded_content" > bot_proxy.json
+        echo "content=$decoded_content" >> $GITHUB_ENV
         echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
 
     - name: Update Proxy File if Necessary
