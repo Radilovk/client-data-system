@@ -5,7 +5,7 @@ on:
     types: [submit-client-response]
 
 jobs:
-  write-client-file:
+  add-client-response:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,12 +17,16 @@ jobs:
         CLIENT_ID: ${{ github.event.client_id }}
         CLIENT_DATA: ${{ github.event.client_data }}
       run: |
+        echo "Decoding and saving client data..."
+        mkdir -p clients
         echo $CLIENT_DATA | base64 -d > clients/client_${CLIENT_ID}.json
+        echo "Client data saved as clients/client_${CLIENT_ID}.json"
 
-    - name: Commit and Push Changes
+    - name: Commit and Push New Client Data
       run: |
+        echo "Committing and pushing new client data..."
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add clients/
-        git commit -m "Add client response"
+        git commit -m "Add new client response: client_${{ github.event.client_id }}"
         git push
