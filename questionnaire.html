@@ -110,7 +110,7 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${T01}`, // Ensure you have the correct token in GitHub Secrets
+                        // Authorization header is no longer needed here
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
