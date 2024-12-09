@@ -3,26 +3,16 @@
     # Четене на текущия SHA от bot_proxy.json
     current_sha=$(cat bot_proxy.json | grep '"sha"' | awk -F'"' '{print $4}')
     echo "Current SHA: $current_sha"
-
     # Четене на новата SHA стойност
     new_client_data_sha="0967ef424bce6791893e9a57bb952f80fd536e93"
-
     # Актуализиране на JSON съдържанието
     new_proxy_content=$(cat bot_proxy.json | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"$new_client_data_sha\"/")
     echo "$new_proxy_content" > bot_proxy_updated.json
-
     # Кодиране в Base64
     encoded_proxy=$(cat bot_proxy_updated.json | base64 -w 0)
-
     # PUT заявка към GitHub API
     curl -X PUT \
          -H "Authorization: token ${{ secrets.T01 }}" \
          -H "Content-Type: application/json" \
-         -d @- <<EOF
-{
-  "message": "Sync bot proxy file",
-  "content": "$encoded_proxy",
-  "sha": "$current_sha",
-  "branch": "main"
-}
-EOF
+         -d "{\"message\": \"Sync bot proxy file\", \"content\": \"$encoded_proxy\", \"sha\": \"$current_sha\", \"branch\": \"main\"}" \
+         https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
