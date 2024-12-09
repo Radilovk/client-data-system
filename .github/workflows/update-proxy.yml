@@ -20,7 +20,7 @@ jobs:
       run: |
         # Изтегляне на bot_proxy.json
         response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
-                         https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
+                     https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
 
         # Извличане на съдържанието и SHA чрез jq
         content=$(echo "$response" | jq -r '.content // empty' | tr -d '\n')
@@ -32,14 +32,18 @@ jobs:
           echo "$decoded_content" > bot_proxy.json
           echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
         else
-          echo "Error: Content is not valid Base64" >&2
-          exit 1
+          echo "Warning: Content is not valid Base64. Skipping decoding." >&2
+          echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
         fi
 
     - name: Update Proxy File if Necessary
       run: |
         # Четене на текущата SHA стойност от bot_proxy.json
-        current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
+        if [[ -f bot_proxy.json ]]; then
+          current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
+        else
+          current_sha=""
+        fi
 
         # Четене на новата SHA стойност
         new_client_data_sha="0967ef424bce6791893e9a57bb952f80fd536e93"
