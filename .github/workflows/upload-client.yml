@@ -33,7 +33,6 @@ jobs:
                          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
         content=$(echo $response | grep -Po '"content":\s*"\K[^"]*' | base64 -d)
         proxy_sha=$(echo $response | grep -Po '"sha":\s*"\K[^"]*')
-
         # Запазване на резултатите
         echo "content=$content" >> $GITHUB_ENV
         echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
@@ -54,7 +53,7 @@ jobs:
           curl -X PUT \
                -H "Authorization: token ${{ secrets.T01 }}" \
                -H "Content-Type: application/json" \
-               -d @- <<EOF
+               -d "$(cat <<EOF
 {
   "message": "Sync bot proxy file",
   "content": "$encoded_content",
@@ -62,6 +61,7 @@ jobs:
   "branch": "main"
 }
 EOF
+)"
         else
           echo "No update needed. client_data_sha is up to date."
         fi
