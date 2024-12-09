@@ -1,0 +1,28 @@
+name: Submit Client Response
+
+on:
+  repository_dispatch:
+    types: [submit-client-response]
+
+jobs:
+  write-client-file:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Decode and Save Client Data
+      env:
+        CLIENT_ID: ${{ github.event.client_id }}
+        CLIENT_DATA: ${{ github.event.client_data }}
+      run: |
+        echo $CLIENT_DATA | base64 -d > clients/client_${CLIENT_ID}.json
+
+    - name: Commit and Push Changes
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add clients/
+        git commit -m "Add client response"
+        git push
