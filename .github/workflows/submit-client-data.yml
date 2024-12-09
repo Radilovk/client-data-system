@@ -26,4 +26,4 @@ jobs:
         -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/json" \
         -d @client_data.json \
-        https://api.yourserver.com/submit-data
+        https://api.github.com/repos/Radilovk/client-data-system/dispatches
