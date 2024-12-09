@@ -33,20 +33,20 @@ jobs:
         response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
                          https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
         echo "$response" > bot_proxy_response.json
-        content=$(jq -r '.content' bot_proxy_response.json | base64 -d)
         proxy_sha=$(jq -r '.sha' bot_proxy_response.json)
-        echo "content=$content" >> $GITHUB_ENV
+        content=$(jq -r '.content' bot_proxy_response.json | base64 -d)
         echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
+        echo "$content" > bot_proxy.json
 
     - name: Compare and update file
       run: |
-        # Проверка дали SHA е променен
-        current_sha=$(echo "${{ env.content }}" | jq -r '.client_data_sha')
+        # Проверка дали SHA е различен
+        current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
         if [[ "$current_sha" != "${{ env.sha }}" ]]; then
           echo "Updating bot_proxy.json with new SHA: ${{ env.sha }}"
 
           # Актуализиране на client_data_sha
-          updated_content=$(echo "${{ env.content }}" | jq --arg new_sha "${{ env.sha }}" '.client_data_sha = $new_sha')
+          updated_content=$(jq --arg new_sha "${{ env.sha }}" '.client_data_sha = $new_sha' bot_proxy.json)
 
           # Кодиране на съдържанието в Base64
           encoded_content=$(echo "$updated_content" | base64 -w 0)
