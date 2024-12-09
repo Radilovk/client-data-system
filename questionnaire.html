@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Questionnaire</title>
+    <title>Клиентски въпросник</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,18 +64,18 @@
 </head>
 <body>
     <div class="container">
-        <h2>Client Questionnaire</h2>
+        <h2>Клиентски въпросник</h2>
         <form id="questionnaire">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            <label for="name">Име:</label>
+            <input type="text" id="name" name="name" placeholder="Въведете вашето име" required>
 
-            <label for="age">Age:</label>
-            <input type="number" id="age" name="age" placeholder="Enter your age" required>
+            <label for="age">Възраст:</label>
+            <input type="number" id="age" name="age" placeholder="Въведете вашата възраст" required>
 
-            <label for="preferences">Diet Preferences:</label>
-            <textarea id="preferences" name="preferences" rows="2" placeholder="Enter your dietary preferences"></textarea>
+            <label for="preferences">Диетични предпочитания:</label>
+            <textarea id="preferences" name="preferences" rows="2" placeholder="Въведете вашите диетични предпочитания"></textarea>
 
-            <button type="submit">Submit</button>
+            <button type="submit">Изпрати</button>
         </form>
         <div id="response-status" class="status"></div>
     </div>
@@ -88,13 +88,13 @@
             const preferences = document.getElementById("preferences").value.trim();
             const statusDiv = document.getElementById("response-status");
 
-            // Reset status message
+            // Reset статус съобщение
             statusDiv.textContent = '';
             statusDiv.className = 'status';
 
-            // Validate form inputs
+            // Валидация на формата
             if (!name || !age || isNaN(age) || age <= 0) {
-                statusDiv.textContent = "Please fill out all fields correctly.";
+                statusDiv.textContent = "Моля, попълнете всички полета правилно.";
                 statusDiv.className = "status error";
                 return;
             }
@@ -110,7 +110,6 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        // Authorization header is no longer needed here
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
@@ -121,17 +120,17 @@
                 console.log("Response status:", response.status);
 
                 if (response.ok) {
-                    statusDiv.textContent = "Response submitted successfully!";
+                    statusDiv.textContent = "Отговорът е изпратен успешно!";
                     statusDiv.className = "status success";
                 } else {
                     const errorData = await response.json();
-                    console.error("Error submitting response:", errorData);
-                    statusDiv.textContent = `Error: ${errorData.message}`;
+                    console.error("Грешка при изпращане на отговора:", errorData);
+                    statusDiv.textContent = `Грешка: ${errorData.message}`;
                     statusDiv.className = "status error";
                 }
             } catch (error) {
-                console.error("Unexpected error:", error);
-                statusDiv.textContent = "An unexpected error occurred. Please try again.";
+                console.error("Неочаквана грешка:", error);
+                statusDiv.textContent = "Възникна неочаквана грешка. Моля, опитайте отново.";
                 statusDiv.className = "status error";
             }
         });
