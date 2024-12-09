@@ -112,12 +112,14 @@
                 const encodeBase64 = (data) => btoa(unescape(encodeURIComponent(data)));
                 const content = encodeBase64(JSON.stringify(data));
 
+                console.log("Starting API request..."); // Лог за стартиране на заявката
+
                 const response = await fetch(
                     `https://api.github.com/repos/${repo}/contents/${path}`,
                     {
                         method: "PUT",
                         headers: {
-                            Authorization: `token ${{ secrets.T01 }}`, // GitHub Secret Token
+                            Authorization: `token T01`, // GitHub Secret Token
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
@@ -127,16 +129,20 @@
                     }
                 );
 
+                console.log("API Response:", response); // Лог за API отговора
+
                 if (response.ok) {
                     const responseData = await response.json();
                     statusDiv.textContent = `File uploaded successfully: ${responseData.content.path}`;
                     statusDiv.className = "success";
                 } else {
                     const errorData = await response.json();
+                    console.error("Error response from API:", errorData);
                     statusDiv.textContent = `Error: ${errorData.message}`;
                     statusDiv.className = "error";
                 }
             } catch (error) {
+                console.error("Unexpected error:", error);
                 statusDiv.textContent = "An unexpected error occurred. Please try again.";
                 statusDiv.className = "error";
             }
