@@ -1,77 +1,25 @@
-name: Update Proxy File
-
-on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch:
-
-jobs:
-  update-proxy:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Fetch bot_proxy.json Content and SHA
-      run: |
-        # Изтегляне на bot_proxy.json
-        response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
+- name: Fetch bot_proxy.json Content and SHA
+  run: |
+    # Изтегляне на bot_proxy.json
+    response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
                      https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
 
-        # Извличане на съдържанието и SHA чрез jq
-        content=$(echo "$response" | jq -r '.content // empty' | tr -d '\n')
-        proxy_sha=$(echo "$response" | jq -r '.sha // empty')
+    # Извличане на съдържанието и SHA чрез jq
+    content=$(echo "$response" | jq -r '.content // empty')
+    proxy_sha=$(echo "$response" | jq -r '.sha // empty')
 
-        # Проверка за валидност на Base64 съдържанието
-        if echo "$content" | base64 -d > /dev/null 2>&1; then
-          decoded_content=$(echo "$content" | base64 -d)
-          echo "$decoded_content" > bot_proxy.json
-          echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
-        else
-          echo "Warning: Content is not valid Base64. Skipping decoding." >&2
-          echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
-        fi
+    # Проверка дали съдържанието е валидно Base64
+    if [[ -n "$content" ]]; then
+      decoded_content=$(echo "$content" | tr -d '\n' | base64 -d 2>/dev/null || echo "INVALID_BASE64")
+      if [[ "$decoded_content" == "INVALID_BASE64" ]]; then
+        echo "Warning: Content is not valid Base64. Skipping decoding." >&2
+        decoded_content=""
+      fi
+    else
+      echo "Error: Content is missing in the response" >&2
+      exit 1
+    fi
 
-    - name: Update Proxy File if Necessary
-      run: |
-        # Четене на текущата SHA стойност от bot_proxy.json
-        if [[ -f bot_proxy.json ]]; then
-          current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
-        else
-          current_sha=""
-        fi
-
-        # Четене на новата SHA стойност
-        new_client_data_sha="0967ef424bce6791893e9a57bb952f80fd536e93"
-
-        # Проверка за промяна
-        if [[ "$current_sha" != "$new_client_data_sha" ]]; then
-          echo "Updating bot_proxy.json with new SHA: $new_client_data_sha"
-
-          # Подмяна на client_data_sha
-          updated_content=$(jq --arg new_sha "$new_client_data_sha" '.client_data_sha = $new_sha' bot_proxy.json)
-
-          # Кодиране на новото съдържание в Base64
-          encoded_content=$(echo "$updated_content" | base64 -w 0)
-
-          # Генериране на JSON за PUT заявката
-          echo "{
-            \"message\": \"Sync bot proxy file\",
-            \"content\": \"$encoded_content\",
-            \"sha\": \"${{ env.proxy_sha }}\",
-            \"branch\": \"main\"
-          }" > payload.json
-
-          # PUT заявка към GitHub API
-          curl -X PUT \
-               -H "Authorization: token ${{ secrets.T01 }}" \
-               -H "Content-Type: application/json" \
-               --data @payload.json \
-               https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json
-        else
-          echo "No update needed. SHA is up to date."
-        fi
+    # Запазване на съдържанието и SHA
+    echo "$decoded_content" > bot_proxy.json
+    echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
