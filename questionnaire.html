@@ -110,11 +110,10 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${T01}`, // Уверете се, че имате правилен токен в GitHub Secrets
+                        Authorization: `Bearer ${T01}`, // Ensure you have the correct token in GitHub Secrets
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
-                        client_id: Date.now(),
                         client_data: btoa(unescape(encodeURIComponent(JSON.stringify(data)))), // Encode data with Unicode support
                     }),
                 });
