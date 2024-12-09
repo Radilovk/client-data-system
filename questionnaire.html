@@ -44,10 +44,11 @@
         button:hover {
             background-color: #218838;
         }
-        #response-status {
-            margin-top: 20px;
+        .status {
+            margin-top: 10px;
             padding: 10px;
             border-radius: 5px;
+            text-align: center;
         }
         .success {
             background-color: #d4edda;
@@ -76,7 +77,7 @@
 
             <button type="submit">Submit</button>
         </form>
-        <div id="response-status"></div>
+        <div id="response-status" class="status"></div>
     </div>
     <script>
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
@@ -87,50 +88,49 @@
             const preferences = document.getElementById("preferences").value.trim();
             const statusDiv = document.getElementById("response-status");
 
+            // Reset status message
             statusDiv.textContent = '';
-            statusDiv.className = '';
+            statusDiv.className = 'status';
 
+            // Validate form inputs
             if (!name || !age || isNaN(age) || age <= 0) {
                 statusDiv.textContent = "Please fill out all fields correctly.";
-                statusDiv.className = "error";
+                statusDiv.className = "status error";
                 return;
             }
 
             const data = {
-                id: `client_${Date.now()}`,
                 name,
                 age,
                 preferences,
-                submitted_at: new Date().toISOString(),
             };
 
             try {
                 const response = await fetch("https://api.github.com/repos/Radilovk/client-data-system/dispatches", {
                     method: "POST",
                     headers: {
-                        Authorization: `token T01`,
                         "Content-Type": "application/json",
+                        Authorization: `token T01`, // GitHub Action Secret Token
                     },
                     body: JSON.stringify({
                         event_type: "submit-client-response",
                         client_id: Date.now(),
-                        client_data: JSON.stringify(data),
+                        client_data: btoa(JSON.stringify(data)), // Encode data to Base64
                     }),
                 });
 
                 if (response.ok) {
                     statusDiv.textContent = "Response submitted successfully!";
-                    statusDiv.className = "success";
+                    statusDiv.className = "status success";
                 } else {
                     const errorData = await response.json();
-                    console.error("Error response from API:", errorData);
                     statusDiv.textContent = `Error: ${errorData.message}`;
-                    statusDiv.className = "error";
+                    statusDiv.className = "status error";
                 }
             } catch (error) {
                 console.error("Unexpected error:", error);
                 statusDiv.textContent = "An unexpected error occurred. Please try again.";
-                statusDiv.className = "error";
+                statusDiv.className = "status error";
             }
         });
     </script>
