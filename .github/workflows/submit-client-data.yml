@@ -1,0 +1,19 @@
+name: Submit Client Data
+
+on:
+  repository_dispatch:
+    types: [submit-client-response]
+
+jobs:
+  handle-client-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Decode client data
+      run: echo "${{ github.event.client_data }}" | base64 --decode > client_data.json
+
+    - name: Print client data
+      run: cat client_data.json
