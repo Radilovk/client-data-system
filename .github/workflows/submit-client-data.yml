@@ -1,8 +1,12 @@
 name: Submit Client Data
 
 on:
-  repository_dispatch:
-    types: [submit-client-response]
+  workflow_dispatch:
+    inputs:
+      client_data:
+        description: 'Client Data'
+        required: true
+        default: '{}'
 
 jobs:
   handle-client-data:
@@ -13,17 +17,9 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Decode client data
-      run: echo "${{ github.event.client_data }}" | base64 --decode > client_data.json
+      run: echo '${{ github.event.inputs.client_data }}' | base64 --decode > clients/client_data.json
 
-    - name: Print client data
-      run: cat client_data.json
-
-    - name: Send data to server
-      env:
-        GITHUB_TOKEN: ${{ secrets.T01 }}
+    - name: Save client data
       run: |
-        curl -X POST \
-        -H "Authorization: Bearer $GITHUB_TOKEN" \
-        -H "Content-Type: application/json" \
-        -d @client_data.json \
-        https://api.github.com/repos/Radilovk/client-data-system/dispatches
+        mkdir -p clients
+        echo '${{ github.event.inputs.client_data }}' | base64 --decode > clients/client_data.json
