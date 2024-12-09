@@ -23,34 +23,24 @@ jobs:
                      https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
 
         # Извличане на съдържанието и SHA
-        content=$(echo "$response" | grep -Po '"content":\s*"\K[^"]*' | tr -d '\n')
-        proxy_sha=$(echo "$response" | grep -Po '"sha":\s*"\K[^"]*')
+        content=$(echo "$response" | jq -r '.content // empty')
+        proxy_sha=$(echo "$response" | jq -r '.sha // empty')
 
-        # Проверка дали съдържанието е валидно Base64
-        if [[ -n "$content" ]]; then
-          if echo "$content" | base64 -d > /dev/null 2>&1; then
-            decoded_content=$(echo "$content" | base64 -d)
-          else
-            echo "Warning: Content is not valid Base64. Skipping decoding." >&2
-            decoded_content=""
-          fi
-        else
-          echo "Error: Content is missing in the response" >&2
+        # Проверка дали съдържанието е налично
+        if [[ -z "$content" || -z "$proxy_sha" ]]; then
+          echo "Error: Missing content or SHA in the response" >&2
           exit 1
         fi
 
-        # Запазване на съдържанието и SHA
-        echo "content=$decoded_content" >> $GITHUB_ENV
+        # Запазване на съдържанието и SHA за последващо използване
+        echo "content=$content" >> $GITHUB_ENV
         echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
 
     - name: Update Proxy File if Necessary
       run: |
-        # Четене на текущата SHA стойност от bot_proxy.json
-        if [[ -f bot_proxy.json ]]; then
-          current_sha=$(jq -r '.client_data_sha' bot_proxy.json)
-        else
-          current_sha=""
-        fi
+        # Четене на текущата SHA стойност директно от Base64 съдържанието
+        decoded_content=$(echo "${{ env.content }}" | base64 -d || echo "{}")
+        current_sha=$(echo "$decoded_content" | jq -r '.client_data_sha // empty')
 
         # Четене на новата SHA стойност
         new_client_data_sha="0967ef424bce6791893e9a57bb952f80fd536e93"
@@ -60,7 +50,7 @@ jobs:
           echo "Updating bot_proxy.json with new SHA: $new_client_data_sha"
 
           # Подмяна на client_data_sha
-          updated_content=$(jq --arg new_sha "$new_client_data_sha" '.client_data_sha = $new_sha' bot_proxy.json)
+          updated_content=$(echo "$decoded_content" | jq --arg new_sha "$new_client_data_sha" '.client_data_sha = $new_sha')
 
           # Кодиране на новото съдържание в Base64
           encoded_content=$(echo "$updated_content" | base64 -w 0)
