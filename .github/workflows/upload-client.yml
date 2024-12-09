@@ -1,34 +1,54 @@
-name: Save Client Data
+name: Update Client Data
 
 on:
-  repository_dispatch:
-    types: [add-client]
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
-  save-client-data:
+  sync-files:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Save client data
-      env:
-        GITHUB_TOKEN: ${{ secrets.T01 }}
+    - name: Fetch client_data.json SHA
+      id: fetch_sha
       run: |
-        # Извличане на данни от събитието
-        client_data=$(echo "${{ github.event.client_data }}" | base64 -d)
-        echo "$client_data" > client_data.json
-        
-        # Създаване на директория и запис на файла
-        mkdir -p clients
-        timestamp=$(date +%s)
-        mv client_data.json clients/client_${timestamp}.json
+        response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
+                         https://api.github.com/repos/Radilovk/client-data-system/contents/client_data.json)
+        sha=$(echo $response | grep -oP '"sha":\s*"\K[^"]*')
+        echo "sha=$sha" >> $GITHUB_ENV
 
-    - name: Commit and push changes
+    - name: Fetch bot_proxy.json Content and SHA
+      id: fetch_proxy
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add clients/
-        git commit -m "Add new client data"
-        git push
+        response=$(curl -s -H "Authorization: token ${{ secrets.T01 }}" \
+                         https://api.github.com/repos/Radilovk/client-data-system/contents/bot_proxy.json)
+        content=$(echo $response | grep -oP '"content":\s*"\K[^"]*' | base64 -d)
+        proxy_sha=$(echo $response | grep -oP '"sha":\s*"\K[^"]*')
+        echo "content=$content" >> $GITHUB_ENV
+        echo "proxy_sha=$proxy_sha" >> $GITHUB_ENV
+
+    - name: Compare and update file
+      run: |
+        if [[ "$(echo "${{ env.content }}" | grep -oP '"client_data_sha":\s*"\K[^"]*')" != "${{ env.sha }}" ]]; then
+          updated_content=$(echo "${{ env.content }}" | sed "s/\"client_data_sha\": \".*\"/\"client_data_sha\": \"${{ env.sha }}\"/" | base64 -w 0)
+          curl -X PUT \
+               -H "Authorization: token ${{ secrets.T01 }}" \
+               -H "Content-Type: application/json" \
+               -d @- <<EOF
+{
+  "message": "Sync bot proxy file",
+  "content": "$updated_content",
+  "sha": "${{ env.proxy_sha }}",
+  "branch": "main"
+}
+EOF
+        else
+          echo "No update needed. SHA is up to date."
+        fi
