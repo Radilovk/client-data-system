@@ -1,52 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Management System</title>
+    <title>Клиентски въпросник</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
             background-color: #f9f9f9;
-            margin: 0;
-            padding: 0;
         }
         .container {
-            max-width: 800px;
-            margin: 50px auto;
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
             padding: 20px;
-            background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            text-align: center;
         }
-        h1 {
+        h2 {
+            text-align: center;
             color: #333;
         }
-        a {
+        form label {
+            font-weight: bold;
+            margin-top: 10px;
             display: block;
-            margin: 10px 0;
+        }
+        input, textarea, button {
+            width: 100%;
             padding: 10px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
+            margin: 10px 0;
+            border: 1px solid #ccc;
             border-radius: 5px;
         }
-        a:hover {
-            background-color: #0056b3;
+        button {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Добре дошли в системата за управление на клиенти</h1>
-        <a href="questionnaire.html">Попълнете въпросник</a>
-        <a href="profile.html">Вашият профил</a>
-        <button id="chatbotBtn">Стартирайте Чатбота</button>
+        <h2>Клиентски въпросник</h2>
+        <form id="questionnaire">
+            <label for="name">Име:</label>
+            <input type="text" id="name" name="name" placeholder="Въведете вашето име" required>
+
+            <label for="email">Имейл:</label>
+            <input type="email" id="email" name="email" placeholder="Въведете вашия имейл" required>
+
+            <label for="age">Възраст:</label>
+            <input type="number" id="age" name="age" placeholder="Въведете вашата възраст" required>
+
+            <label for="preferences">Диетични предпочитания:</label>
+            <textarea id="preferences" name="preferences" rows="2" placeholder="Въведете вашите диетични предпочитания"></textarea>
+
+            <button type="submit">Изпрати</button>
+        </form>
+        <div id="response-status" class="status"></div>
     </div>
     <script>
-        document.getElementById("chatbotBtn").addEventListener("click", () => {
-            window.open("https://chat.openai.com/chat", "_blank");
+        document.getElementById("questionnaire").addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const age = document.getElementById("age").value.trim();
+            const preferences = document.getElementById("preferences").value.trim();
+            const statusDiv = document.getElementById("response-status");
+
+            statusDiv.textContent = '';
+            statusDiv.className = 'status';
+
+            if (!name || !email || !age || isNaN(age) || age <= 0) {
+                statusDiv.textContent = "Моля, попълнете всички полета правилно.";
+                statusDiv.className = "status error";
+                return;
+            }
+
+            const data = {
+                name,
+                email,
+                age,
+                preferences,
+            };
+
+            try {
+                const response = await fetch(`https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${GITHUB_TOKEN}`
+                    },
+                    body: JSON.stringify({
+                        ref: "main",
+                        inputs: {
+                            client_data: btoa(unescape(encodeURIComponent(JSON.stringify(data))))
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    statusDiv.textContent = "Отговорът е изпратен успешно!";
+                    statusDiv.className = "status success";
+                } else {
+                    const errorData = await response.json();
+                    statusDiv.textContent = `Грешка: ${errorData.message}`;
+                    statusDiv.className = "status error";
+                }
+            } catch (error) {
+                statusDiv.textContent = "Възникна неочаквана грешка. Моля, опитайте отново.";
+                statusDiv.className = "status error";
+            }
         });
     </script>
 </body>
