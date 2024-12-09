@@ -7,9 +7,9 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
+            margin: 20px;
             padding: 20px;
+            background-color: #f9f9f9;
         }
         .container {
             max-width: 600px;
@@ -51,61 +51,73 @@
         <h2>Client Questionnaire</h2>
         <form id="questionnaire">
             <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
 
             <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
+            <input type="number" id="age" name="age" placeholder="Enter your age" required>
 
             <label for="preferences">Diet Preferences:</label>
-            <textarea id="preferences" name="preferences" rows="2"></textarea>
-
-            <label for="goals">Goals:</label>
-            <textarea id="goals" name="goals" rows="2"></textarea>
+            <textarea id="preferences" name="preferences" rows="2" placeholder="Enter your dietary preferences"></textarea>
 
             <button type="submit">Submit</button>
         </form>
     </div>
-
     <script>
         document.getElementById("questionnaire").addEventListener("submit", async (event) => {
             event.preventDefault();
 
-            const name = document.getElementById("name").value;
-            const age = document.getElementById("age").value;
-            const preferences = document.getElementById("preferences").value;
-            const goals = document.getElementById("goals").value;
+            // Събиране на данните от формата
+            const name = document.getElementById("name").value.trim();
+            const age = document.getElementById("age").value.trim();
+            const preferences = document.getElementById("preferences").value.trim();
 
-            const clientData = {
+            // Валидация на данните
+            if (!name || !age || isNaN(age) || age <= 0) {
+                alert("Please fill out all fields correctly.");
+                return;
+            }
+
+            const data = {
+                id: `client_${Date.now()}`,
                 name,
                 age,
                 preferences,
-                goals,
-                timestamp: new Date().toISOString()
+                submitted_at: new Date().toISOString(),
             };
 
+            const repo = "Radilovk/client-data-system";
+            const path = `clients/client_${Date.now()}.json`;
+
             try {
-                const response = await fetch("https://api.github.com/repos/YOUR_USERNAME/YOUR_REPOSITORY/dispatches", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": "Bearer YOUR_GITHUB_TOKEN",
-                        "Content-Type": "application/json",
-                        "Accept": "application/vnd.github.v3+json"
-                    },
-                    body: JSON.stringify({
-                        event_type: "add-client",
-                        client_data: clientData
-                    })
-                });
+                // Кодиране на данните в Base64
+                const content = btoa(JSON.stringify(data));
+
+                // PUT заявка към GitHub API
+                const response = await fetch(
+                    `https://api.github.com/repos/${repo}/contents/${path}`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            Authorization: `token ${T01}`, // Токенът се взема от GitHub Secrets
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            message: "Add new client response",
+                            content,
+                        }),
+                    }
+                );
 
                 if (response.ok) {
-                    alert("Client data submitted successfully!");
-                    document.getElementById("questionnaire").reset();
+                    alert("Response submitted successfully!");
                 } else {
-                    const errorDetails = await response.text();
-                    throw new Error(errorDetails);
+                    const errorData = await response.json();
+                    console.error("Error submitting response:", errorData);
+                    alert(`Failed to submit response: ${errorData.message}`);
                 }
             } catch (error) {
-                alert("Failed to submit client data: " + error.message);
+                console.error("Unexpected error:", error);
+                alert("An unexpected error occurred. Please try again.");
             }
         });
     </script>
