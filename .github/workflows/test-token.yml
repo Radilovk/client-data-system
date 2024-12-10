@@ -1,56 +1,29 @@
-name: Test Write Permissions
+name: Test GitHub Token
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-write-permissions:
+  test-github-token:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Create or Update File
+    - name: Test GitHub Token
       env:
         GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
-        echo "Testing write permissions..."
+        echo "Testing GitHub Token..."
+        # Изпращане на заявка към GitHub API за проверка на токена
+        response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user)
+        echo "Response: $response"
 
-        # Създаване на съдържание за файла
-        content="Test content created on $(date)"
-        encoded_content=$(echo "$content" | base64 -w 0)
-
-        # Път на файла, който ще бъде създаден или обновен
-        file_path="test-write-permissions.txt"
-
-        # Проверка дали файлът съществува
-        response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                         https://api.github.com/repos/${{ github.repository }}/contents/$file_path)
-
-        sha=""
-        if echo "$response" | grep -q '"sha":'; then
-          sha=$(echo "$response" | jq -r '.sha')
-          echo "File already exists. Updating it..."
+        # Проверка дали токенът е валиден
+        if echo "$response" | grep -q '"login"'; then
+          echo "Token is valid."
         else
-          echo "File does not exist. Creating a new one..."
+          echo "Invalid token or insufficient permissions."
+          exit 1
         fi
-
-        # PUT заявка за създаване или обновяване на файла
-        curl -X PUT \
-             -H "Authorization: Bearer $GITHUB_TOKEN" \
-             -H "Content-Type: application/json" \
-             -d @- <<EOF
-        {
-          "message": "Test write permissions",
-          "content": "$encoded_content",
-          "sha": "$sha",
-          "branch": "main"
-        }
-EOF
-
-    - name: Verify File Update
-      run: |
-        echo "Verifying file update..."
-        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-             https://api.github.com/repos/${{ github.repository }}/contents/test-write-permissions.txt
