@@ -1,5 +1,9 @@
 name: Submit Client Data
 
+permissions:
+  contents: write
+  workflows: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -15,14 +19,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Validate and Log Input Data
+      run: |
+        echo "Received data:"
+        echo "${{ github.event.inputs.client_data }}"
+
     - name: Create client data file
       run: |
-        # Извличане на подадените данни
-        echo "${{ github.event.inputs.client_data }}" > client_data.json
-
-        # Създаване на нов JSON файл в директорията clients/
-        timestamp=$(date +%s)
+        # Създаване на директорията за клиенти, ако не съществува
         mkdir -p clients
+        
+        # Създаване на JSON файл със съдържанието
+        timestamp=$(date +%s)
         echo "${{ github.event.inputs.client_data }}" > clients/client_${timestamp}.json
 
     - name: Commit and Push Client Data
@@ -32,5 +40,5 @@ jobs:
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add clients/
-        git commit -m "Add new client data"
+        git commit -m "Add new client data at $(date)"
         git push
