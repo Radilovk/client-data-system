@@ -1,7 +1,9 @@
 name: Submit Client Data
 
 permissions:
-  contents: write  # Разрешаваме запис само в съдържанието на хранилището
+  contents: write         # Позволява запис на файлове в хранилището
+  workflows: write        # Позволява управление на workflows
+  administration: write   # Дава администраторски права за управление на хранилището
 
 on:
   workflow_dispatch:
