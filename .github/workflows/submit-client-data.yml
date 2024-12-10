@@ -1,8 +1,7 @@
 name: Submit Client Data
 
 permissions:
-  contents: write
-  workflows: write
+  contents: write  # Разрешаваме запис само в съдържанието на хранилището
 
 on:
   workflow_dispatch:
