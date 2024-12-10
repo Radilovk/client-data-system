@@ -1,0 +1,46 @@
+name: Test File Operations
+
+on: [push]
+
+jobs:
+  create_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Create a file
+        run: |
+          echo "Test content" > test-file.txt
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          git add test-file.txt
+          git commit -m "Add test file"
+          git push origin HEAD
+
+  delete_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Delete the file
+        run: |
+          git rm test-file.txt
+          git commit -m "Remove test file"
+          git push origin HEAD
+
+  modify_file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      
+      - name: Modify the file
+        run: |
+          echo "Modified content" > test-file.txt
+          git config --global user.email "you@example.com"
+          git config --global user.name "Your Name"
+          git add test-file.txt
+          git commit -m "Modify test file"
+          git push origin HEAD
