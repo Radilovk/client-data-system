@@ -4,22 +4,25 @@ on:
   workflow_dispatch:
     inputs:
       client_data:
-        description: 'Client Data'
+        description: "Client data in JSON format"
         required: true
-        default: '{}'
 
 jobs:
-  handle-client-data:
+  process-client:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Decode client data
-      run: echo '${{ github.event.inputs.client_data }}' | base64 --decode > clients/client_data.json
+      - name: Create client file
+        run: |
+          echo '${{ inputs.client_data }}' > clients/client_$(date +%s).json
 
-    - name: Save client data
-      run: |
-        mkdir -p clients
-        echo '${{ github.event.inputs.client_data }}' | base64 --decode > clients/client_data.json
+      - name: Commit and Push
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add clients/client_*.json
+          git commit -m "Add new client response"
+          git push
