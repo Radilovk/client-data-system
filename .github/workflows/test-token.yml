@@ -18,13 +18,14 @@ jobs:
         curl -X PUT \
           -H "Authorization: token ${{ secrets.T01 }}" \
           -H "Content-Type: application/json" \
-          -d @- <<EOF
+          -d "$(cat <<EOF
 {
   "message": "Create test file",
   "content": "$(cat base64content.txt)",
   "branch": "main"
 }
-EOF \
+EOF
+)" \
           https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
 
     - name: Test Token - Modify File
@@ -33,14 +34,15 @@ EOF \
         curl -X PUT \
           -H "Authorization: token ${{ secrets.T01 }}" \
           -H "Content-Type: application/json" \
-          -d @- <<EOF
+          -d "$(cat <<EOF
 {
   "message": "Modify test file",
   "content": "$(echo 'Updated content' | base64)",
-  "sha": "$(curl -s -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
+  "sha": "$(curl -s -H 'Authorization: token ${{ secrets.T01 }}' https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
   "branch": "main"
 }
-EOF \
+EOF
+)" \
           https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
 
     - name: Test Token - Delete File
@@ -49,11 +51,12 @@ EOF \
         curl -X DELETE \
           -H "Authorization: token ${{ secrets.T01 }}" \
           -H "Content-Type: application/json" \
-          -d @- <<EOF
+          -d "$(cat <<EOF
 {
   "message": "Delete test file",
-  "sha": "$(curl -s -H "Authorization: token ${{ secrets.T01 }}" https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
+  "sha": "$(curl -s -H 'Authorization: token ${{ secrets.T01 }}' https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
   "branch": "main"
 }
-EOF \
+EOF
+)" \
           https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
