@@ -1,23 +1,56 @@
-name: Test GitHub Token
+name: Test Write Permissions
 
 on:
-  workflow_dispatch: # Можете ръчно да стартирате този workflow
+  workflow_dispatch:
 
 jobs:
-  test-token:
+  test-write-permissions:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Test GitHub Token
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Create or Update File
       env:
         GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
-        echo "Testing GitHub Token..."
+        echo "Testing write permissions..."
+
+        # Създаване на съдържание за файла
+        content="Test content created on $(date)"
+        encoded_content=$(echo "$content" | base64 -w 0)
+
+        # Път на файла, който ще бъде създаден или обновен
+        file_path="test-write-permissions.txt"
+
+        # Проверка дали файлът съществува
         response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                     https://api.github.com/user)
-        echo "Response: $response"
-        if echo "$response" | grep -q '"login":'; then
-          echo "Token is valid."
+                         https://api.github.com/repos/${{ github.repository }}/contents/$file_path)
+
+        sha=""
+        if echo "$response" | grep -q '"sha":'; then
+          sha=$(echo "$response" | jq -r '.sha')
+          echo "File already exists. Updating it..."
         else
-          echo "Token is invalid or missing permissions."
-          exit 1
+          echo "File does not exist. Creating a new one..."
+        fi
+
+        # PUT заявка за създаване или обновяване на файла
+        curl -X PUT \
+             -H "Authorization: Bearer $GITHUB_TOKEN" \
+             -H "Content-Type: application/json" \
+             -d @- <<EOF
+        {
+          "message": "Test write permissions",
+          "content": "$encoded_content",
+          "sha": "$sha",
+          "branch": "main"
+        }
+EOF
+
+    - name: Verify File Update
+      run: |
+        echo "Verifying file update..."
+        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+             https://api.github.com/repos/${{ github.repository }}/contents/test-write-permissions.txt
