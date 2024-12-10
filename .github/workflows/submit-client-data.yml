@@ -1,7 +1,8 @@
 name: Submit Client Data
 
 permissions:
-  contents: write         # Позволява запис на файлове в хранилището
+  contents: write         # Дава права за запис на съдържание
+  actions: write          # Дава права за стартиране на workflows
 
 on:
   workflow_dispatch:
@@ -25,10 +26,7 @@ jobs:
 
     - name: Create client data file
       run: |
-        # Създаване на директорията за клиенти, ако не съществува
         mkdir -p clients
-        
-        # Създаване на JSON файл със съдържанието
         timestamp=$(date +%s)
         echo "${{ github.event.inputs.client_data }}" > clients/client_${timestamp}.json
 
