@@ -16,6 +16,7 @@ jobs:
           git config --global user.name "Your Name"
           git add test-file.txt
           git commit -m "Add test file"
+          git pull --rebase
           git push origin HEAD
 
   delete_file:
@@ -28,6 +29,7 @@ jobs:
         run: |
           git rm test-file.txt
           git commit -m "Remove test file"
+          git pull --rebase
           git push origin HEAD
 
   modify_file:
@@ -43,4 +45,5 @@ jobs:
           git config --global user.name "Your Name"
           git add test-file.txt
           git commit -m "Modify test file"
+          git pull --rebase
           git push origin HEAD
