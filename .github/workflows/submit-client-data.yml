@@ -22,7 +22,7 @@ jobs:
           exit 1
         fi
 
-    - name: Create client data file
+    - name: Create Client Data File
       run: |
         # Извличане на подадените данни
         echo "${{ github.event.inputs.client_data }}" > client_data.json
