@@ -84,13 +84,18 @@
 
             try {
                 const response = await fetch(
-                    "/submit-client-data", // Крайна точка на бекенд сървър или GitHub Actions
+                    "https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches",
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                         },
-                        body: JSON.stringify(data),
+                        body: JSON.stringify({
+                            ref: "main",
+                            inputs: {
+                                client_data: JSON.stringify(data),
+                            },
+                        }),
                     }
                 );
 
