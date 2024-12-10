@@ -15,14 +15,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Validate Input
-      run: |
-        if [[ -z "${{ github.event.inputs.client_data }}" ]]; then
-          echo "Error: No client data provided."
-          exit 1
-        fi
-
-    - name: Create Client Data File
+    - name: Create client data file
       run: |
         # Извличане на подадените данни
         echo "${{ github.event.inputs.client_data }}" > client_data.json
