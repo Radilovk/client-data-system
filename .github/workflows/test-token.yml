@@ -1,62 +1,74 @@
-name: Test GitHub Token Actions
+name: Test GitHub Token Permissions
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-github-token:
+  test-permissions:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Test Token - Create File
+    - name: Test Create File
+      env:
+        GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
         echo "Testing file creation..."
-        echo "VGhpcyBpcyBhIHRlc3QgZmlsZSBjb250ZW50" > base64content.txt
+        echo "This is a test file." > test-file.txt
+        encoded_content=$(cat test-file.txt | base64 -w 0)
         curl -X PUT \
-          -H "Authorization: token ${{ secrets.T01 }}" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "$(cat <<EOF
+          -d @- <<EOF
 {
-  "message": "Create test file",
-  "content": "$(cat base64content.txt)",
-  "branch": "main"
+  "message": "Test file creation",
+  "content": "$encoded_content",
+  "branch": "main",
+  "path": "test/test-file.txt"
 }
 EOF
-)" \
-          https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
 
-    - name: Test Token - Modify File
+    - name: Test Update File
+      env:
+        GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
-        echo "Testing file modification..."
+        echo "Testing file update..."
+        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          https://api.github.com/repos/${{ github.repository }}/contents/test/test-file.txt > response.json
+        sha=$(jq -r '.sha' response.json)
+        echo "Updated content" > test-file.txt
+        encoded_content=$(cat test-file.txt | base64 -w 0)
         curl -X PUT \
-          -H "Authorization: token ${{ secrets.T01 }}" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "$(cat <<EOF
+          -d @- <<EOF
 {
-  "message": "Modify test file",
-  "content": "$(echo 'Updated content' | base64)",
-  "sha": "$(curl -s -H 'Authorization: token ${{ secrets.T01 }}' https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
-  "branch": "main"
+  "message": "Test file update",
+  "content": "$encoded_content",
+  "sha": "$sha",
+  "branch": "main",
+  "path": "test/test-file.txt"
 }
 EOF
-)" \
-          https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
 
-    - name: Test Token - Delete File
+    - name: Test Delete File
+      env:
+        GITHUB_TOKEN: ${{ secrets.T01 }}
       run: |
         echo "Testing file deletion..."
+        curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          https://api.github.com/repos/${{ github.repository }}/contents/test/test-file.txt > response.json
+        sha=$(jq -r '.sha' response.json)
         curl -X DELETE \
-          -H "Authorization: token ${{ secrets.T01 }}" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "$(cat <<EOF
+          -d @- <<EOF
 {
-  "message": "Delete test file",
-  "sha": "$(curl -s -H 'Authorization: token ${{ secrets.T01 }}' https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt | jq -r '.sha')",
-  "branch": "main"
+  "message": "Test file deletion",
+  "sha": "$sha",
+  "branch": "main",
+  "path": "test/test-file.txt"
 }
 EOF
-)" \
-          https://api.github.com/repos/Radilovk/client-data-system/contents/test_file.txt
