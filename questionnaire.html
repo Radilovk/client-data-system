@@ -41,6 +41,7 @@
             };
 
             try {
+                // Изпращане на заявка към GitHub API за задействане на събитие
                 const response = await fetch('https://api.github.com/repos/Radilovk/client-data-system/dispatches', {
                     method: 'POST',
                     headers: {
