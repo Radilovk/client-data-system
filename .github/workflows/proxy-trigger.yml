@@ -15,14 +15,13 @@ jobs:
     - name: Trigger Main Workflow
       run: |
         echo "Triggering Submit Client Data workflow..."
-        client_data=$(echo '${{ github.event.inputs.client_data }}' | jq -R .)
         curl -X POST \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.T01 }}" \
           -H "Content-Type: application/json" \
-          -d "{
-                \"ref\": \"main\",
-                \"inputs\": {
-                    \"client_data\": $client_data
+          -d '{
+                "ref": "main",
+                "inputs": {
+                    "client_data": ${{ github.event.inputs.client_data }}
                 }
-              }" \
+              }' \
           https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches
