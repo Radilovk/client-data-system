@@ -6,7 +6,7 @@ on:
       - create_client_record
 
 permissions:
-  contents: write  # Позволява писане на файлове в хранилището
+  contents: write
 
 jobs:
   submit_client_data:
@@ -16,14 +16,11 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v3
 
-    - name: Parse client data
+    - name: Save client data
       run: |
-        echo '${{ toJson(github.event.client_data) }}' > clients/client_$(date +%s).json
-
-    - name: Commit and push changes
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add clients/
-        git commit -m "Add new client record"
+        TIMESTAMP=$(date +%s)
+        CLIENT_FILE="clients/client_${TIMESTAMP}.json"
+        echo '${{ toJson(github.event.client_data) }}' > $CLIENT_FILE
+        git add $CLIENT_FILE
+        git commit -m "Add client data"
         git push
