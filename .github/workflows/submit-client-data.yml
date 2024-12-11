@@ -6,7 +6,7 @@ on:
       - create_client_record
 
 permissions:
-  contents: write  # Разрешаване на четене и запис на съдържание
+  contents: write  # Позволява писане на файлове в хранилището
 
 jobs:
   submit_client_data:
@@ -17,17 +17,13 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Parse client data
-      id: parse-data
       run: |
-        echo '${{ toJson(github.event.client_data) }}' > client_data.json
+        echo '${{ toJson(github.event.client_data) }}' > clients/client_$(date +%s).json
 
-    - name: Add client record
+    - name: Commit and push changes
       run: |
-        TIMESTAMP=$(date +%s)
-        CLIENT_FILE="clients/client_${TIMESTAMP}.json"
-        mv client_data.json $CLIENT_FILE
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add $CLIENT_FILE
+        git add clients/
         git commit -m "Add new client record"
         git push
