@@ -1,8 +1,13 @@
 name: Submit Client Data
 
 permissions:
-  contents: write         # Дава права за запис на съдържание
-  actions: write          # Дава права за стартиране на workflows
+  contents: write         # Позволява създаване, актуализиране и изтриване на файлове
+  issues: write           # Позволява създаване и управление на issues
+  pull-requests: write    # Позволява управление на pull requests
+  actions: write          # Позволява управление на workflows
+  deployments: write      # Позволява управление на деплойменти
+  packages: write         # Позволява управление на пакети
+  statuses: write         # Позволява управление на статуси на commit-и
 
 on:
   workflow_dispatch:
@@ -32,10 +37,10 @@ jobs:
 
     - name: Commit and Push Client Data
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PERSONAL_TOKEN: ${{ secrets.T01 }}
       run: |
         git config user.name "GitHub Actions"
         git config user.email "actions@github.com"
         git add clients/
         git commit -m "Add new client data at $(date)"
-        git push
+        git push https://x-access-token:${{ env.PERSONAL_TOKEN }}@github.com/${{ github.repository }}.git
