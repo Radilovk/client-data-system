@@ -1,0 +1,25 @@
+name: Test Dispatch Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-dispatch:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger Workflow Dispatch
+      env:
+        PERSONAL_TOKEN: ${{ secrets.T01 }}
+      run: |
+        echo "Triggering workflow dispatch..."
+        curl -X POST \
+          -H "Authorization: Bearer $PERSONAL_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+                "ref": "main",
+                "inputs": {
+                    "client_data": "{\"name\":\"John\",\"age\":30,\"preferences\":\"Vegetarian\"}"
+                }
+              }' \
+          https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches
