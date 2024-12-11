@@ -1,13 +1,7 @@
 name: Submit Client Data
 
 permissions:
-  contents: write         # Позволява създаване, актуализиране и изтриване на файлове
-  issues: write           # Позволява създаване и управление на issues
-  pull-requests: write    # Позволява управление на pull requests
-  actions: write          # Позволява управление на workflows
-  deployments: write      # Позволява управление на деплойменти
-  packages: write         # Позволява управление на пакети
-  statuses: write         # Позволява управление на статуси на commit-и
+  contents: write         # Позволява запис на файлове в хранилището
 
 on:
   workflow_dispatch:
