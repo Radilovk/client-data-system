@@ -1,11 +1,1 @@
-{
-    "clients": [
-        {
-            "id": "client_001",
-            "name": "Jane Doe",
-            "age": 28,
-            "preferences": "Loves cycling and healthy food.",
-            "goals": "Participate in triathlons and learn Spanish."
-        }
-    ]
-}
+{"clients": [{"id": "client_001", "name": "Jane Doe", "age": 28, "preferences": "Loves cycling and healthy food.", "goals": "Participate in triathlons and learn Spanish."}, {"id": "client_002", "name": "Стамат", "age": 35, "preferences": "Обича планински туризъм и традиционна българска кухня.", "goals": "Да посети всички върхове в България и да напише кулинарна книга."}]}
