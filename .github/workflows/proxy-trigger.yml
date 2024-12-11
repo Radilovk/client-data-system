@@ -21,7 +21,7 @@ jobs:
           -d '{
                 "ref": "main",
                 "inputs": {
-                    "client_data": ${{ github.event.inputs.client_data }}
+                    "client_data": "'${{ github.event.inputs.client_data | toJson }}'"
                 }
               }' \
           https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches
