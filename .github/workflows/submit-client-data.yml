@@ -1,37 +1,33 @@
 name: Submit Client Data
 
 on:
-  workflow_dispatch:
-    inputs:
-      client_data:
-        description: "Client data as JSON"
-        required: true
+  repository_dispatch:
+    types:
+      - create_client_record
+
+permissions:
+  contents: write  # Разрешаване на четене и запис на съдържание
 
 jobs:
-  process-client-data:
+  submit_client_data:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+    - name: Check out repository
+      uses: actions/checkout@v3
 
-    - name: Validate and Log Input Data
+    - name: Parse client data
+      id: parse-data
       run: |
-        echo "Received data:"
-        echo "${{ github.event.inputs.client_data }}"
+        echo '${{ toJson(github.event.client_data) }}' > client_data.json
 
-    - name: Create client data file
+    - name: Add client record
       run: |
-        mkdir -p clients
-        timestamp=$(date +%s)
-        echo "${{ github.event.inputs.client_data }}" > clients/client_${timestamp}.json
-
-    - name: Commit and Push Client Data
-      env:
-        PERSONAL_TOKEN: ${{ secrets.T01 }}
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add clients/
-        git commit -m "Add new client data at $(date)"
-        git push https://x-access-token:${{ env.PERSONAL_TOKEN }}@github.com/${{ github.repository }}.git
+        TIMESTAMP=$(date +%s)
+        CLIENT_FILE="clients/client_${TIMESTAMP}.json"
+        mv client_data.json $CLIENT_FILE
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add $CLIENT_FILE
+        git commit -m "Add new client record"
+        git push
