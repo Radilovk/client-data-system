@@ -1,9 +1,0 @@
-
-{
-  "name": "Мишо Петров",
-  "age": 25,
-  "preferences": {
-    "interests": ["музика", "гейминг", "книги"],
-    "preferred_contact": "phone"
-  }
-}
