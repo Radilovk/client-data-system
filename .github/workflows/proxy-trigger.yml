@@ -1,0 +1,27 @@
+name: Proxy Trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      client_data:
+        description: "Client data from HTML form"
+        required: true
+
+jobs:
+  trigger-main-workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger Main Workflow
+      run: |
+        echo "Triggering Submit Client Data workflow..."
+        curl -X POST \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+                "ref": "main",
+                "inputs": {
+                    "client_data": ${{ github.event.inputs.client_data }}
+                }
+              }' \
+          https://api.github.com/repos/Radilovk/client-data-system/actions/workflows/submit-client-data.yml/dispatches
