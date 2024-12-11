@@ -14,7 +14,7 @@ jobs:
       id: generate-token
       run: |
         APP_ID=YOUR_APP_ID
-        PRIVATE_KEY=${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+        PRIVATE_KEY=${{ secrets.CLIENTS_APP_PRIVATE_KEY }}
         JWT=$(echo -n $PRIVATE_KEY | base64 --decode | openssl rsautl -sign -inkey /dev/stdin | openssl base64)
         TOKEN=$(curl -X POST \
           -H "Authorization: Bearer $JWT" \
