@@ -5,25 +5,51 @@ on:
     types:
       - create_client_record
 
+permissions:
+  contents: write  # Позволява четене и запис на файлове в хранилището
+
 jobs:
   submit_client_data:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Check out repository
+      uses: actions/checkout@v3
+
     - name: Generate GitHub App Token
       id: generate-token
       run: |
-        APP_ID=YOUR_APP_ID
-        PRIVATE_KEY=${{ secrets.CLIENTS_APP_PRIVATE_KEY }}
-        JWT=$(echo -n $PRIVATE_KEY | base64 --decode | openssl rsautl -sign -inkey /dev/stdin | openssl base64)
-        TOKEN=$(curl -X POST \
+        # Записване на Private Key във файл
+        echo "${{ secrets.CLIENTS_APP_PRIVATE_KEY }}" > private-key.pem
+
+        # Генериране на JWT
+        APP_ID=1084761
+        ISSUED_AT=$(date +%s)
+        EXPIRATION=$((ISSUED_AT + 600)) # Валиден за 10 минути
+        HEADER=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A)
+        PAYLOAD=$(echo -n "{\"iss\":\"$APP_ID\",\"iat\":$ISSUED_AT,\"exp\":$EXPIRATION}" | openssl base64 -A)
+        JWT="$HEADER.$PAYLOAD"
+        JWT=$(echo -n $JWT | openssl dgst -sha256 -sign private-key.pem | openssl base64 -A)
+
+        # Извличане на Installation Token
+        INSTALLATION_ID=$(curl -s -X GET \
           -H "Authorization: Bearer $JWT" \
           -H "Accept: application/vnd.github+json" \
-          https://api.github.com/app/installations/INSTALLATION_ID/access_tokens | jq -r '.token')
-        echo "token=$TOKEN" >> $GITHUB_ENV
+          https://api.github.com/app/installations | jq -r '.[0].id')
 
-    - name: Check out repository
-      uses: actions/checkout@v3
+        RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer $JWT" \
+          -H "Accept: application/vnd.github+json" \
+          https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens)
+
+        TOKEN=$(echo "$RESPONSE" | jq -r '.token')
+        if [ "$TOKEN" == "null" ]; then
+          echo "Error: Unable to generate GitHub App token."
+          echo "$RESPONSE"
+          exit 1
+        fi
+
+        echo "token=$TOKEN" >> $GITHUB_ENV
 
     - name: Save client data
       env:
