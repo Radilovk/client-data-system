@@ -1,40 +1,19 @@
-name: Submit Client Data
-
-permissions:
-  contents: write         # Позволява запис на файлове в хранилището
+name: Test Secret Token
 
 on:
   workflow_dispatch:
-    inputs:
-      client_data:
-        description: "Client data as JSON"
-        required: true
 
 jobs:
-  process-client-data:
+  test-token:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Validate and Log Input Data
-      run: |
-        echo "Received data:"
-        echo "${{ github.event.inputs.client_data }}"
-
-    - name: Create client data file
-      run: |
-        mkdir -p clients
-        timestamp=$(date +%s)
-        echo "${{ github.event.inputs.client_data }}" > clients/client_${timestamp}.json
-
-    - name: Commit and Push Client Data
+    - name: Test Personal Token
       env:
         PERSONAL_TOKEN: ${{ secrets.T01 }}
       run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add clients/
-        git commit -m "Add new client data at $(date)"
-        git push https://x-access-token:${{ env.PERSONAL_TOKEN }}@github.com/${{ github.repository }}.git
+        echo "Testing Personal Token"
+        curl -X GET \
+          -H "Authorization: Bearer $PERSONAL_TOKEN" \
+          -H "Content-Type: application/json" \
+          https://api.github.com/user
